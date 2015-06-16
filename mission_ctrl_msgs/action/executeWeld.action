@@ -1,0 +1,16 @@
+#Goal:
+
+string task_name
+
+---
+
+#Result:
+
+string error_string
+bool result_state
+
+---
+#Feedback:
+
+string stud_id
+bool stud_state
