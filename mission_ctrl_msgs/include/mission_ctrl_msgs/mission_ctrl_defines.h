@@ -9,6 +9,13 @@
 /* Messages */
 #define CARLOS_BASE_STATE_MSG "/carlos/base_state"
 #define CARLOS_ARM_STATE_MSG  "/carlos/arm_state"
+#define CARLOS_JOINT_MOVE_MSG "/carlos/joint_movement"
+#define CARLOS_STUDS_POS_MSG  "/carlos/studs_pose"
+#define CARLOS_STUDS_PRJ_MSG  "/carlos/studs_projector"
+
+/* Services */
+#define CARLOS_VISION_SET_MODE_SRV "/carlos/vision/set_mode"
+#define CARLOS_VISION_GET_MODE_SRV "/carlos/vision/get_mode"
 
 /* Actions */
 #define CARLOS_WELD_ACTION    "/carlos/execute_weld"
@@ -63,6 +70,16 @@ enum states
     SUCCEEDED,
     FAILED
 };
+}
+
+namespace vision
+{
+  enum states
+  {
+    STOPPED = 0,
+    DETECT,
+    TRACK
+  };
 }
 
 #endif /* CARLOS_MISSION_CTRL_DEFINES_H */
