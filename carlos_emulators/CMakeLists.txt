@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mission_ctrl_msgs)
+project(carlos_emulators)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  message_generation
-  geometry_msgs
+  roscpp
+  roslib
   actionlib
   actionlib_msgs
-  std_msgs
+  mission_ctrl_msgs
 )
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -45,35 +46,31 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  hardware_state.msg
- )
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  GetMode.srv
-  SetMode.srv
-)
+# add_service_files(
+#   FILES
+#   Service1.srv
+#   Service2.srv
+# )
 
 ## Generate actions in the 'action' folder
-add_action_files(
-   DIRECTORY action
-   FILES
-   executeWeld.action
-   generateStudDistribution.action
-   movePlatform.action
-   projectionPose.action
-   performTeaching.action
- )
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   actionlib_msgs
-   geometry_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -85,10 +82,13 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES mission_ctrl_msgs
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+#  INCLUDE_DIRS include
+#  LIBRARIES carlos_emulators
+  CATKIN_DEPENDS
+    roscpp
+    roslib
+    mission_ctrl_msgs
+  DEPENDS Boost
 )
 
 ###########
@@ -97,25 +97,43 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+ include_directories(
+    ${catkin_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+    )
 
 ## Declare a cpp library
-# add_library(mission_ctrl_msgs
-#   src/${PROJECT_NAME}/mission_ctrl_msgs.cpp
+# add_library(carlos_emulators
+#   src/${PROJECT_NAME}/carlos_emulators.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(mission_ctrl_msgs_node src/mission_ctrl_msgs_node.cpp)
+ add_executable(arm_emulator src/arm_emulator.cpp)
+ add_executable(platform_emulator src/platform_emulator.cpp)
+ add_executable(ui_emulator src/ui_emulator.cpp)
+
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(mission_ctrl_msgs_node mission_ctrl_msgs_generate_messages_cpp)
+add_dependencies(arm_emulator mission_ctrl_msgs_generate_messages_cpp)
+add_dependencies(platform_emulator mission_ctrl_msgs_generate_messages_cpp)
+add_dependencies(ui_emulator mission_ctrl_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(mission_ctrl_msgs_node
-#   ${catkin_LIBRARIES}
-# )
+ target_link_libraries(arm_emulator
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+ )
 
+ target_link_libraries(platform_emulator
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+ )
+
+ target_link_libraries(ui_emulator
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+ )
 #############
 ## Install ##
 #############
@@ -131,7 +149,7 @@ catkin_package(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS mission_ctrl_msgs mission_ctrl_msgs_node
+# install(TARGETS carlos_emulators carlos_emulators_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -156,7 +174,7 @@ catkin_package(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_mission_ctrl_msgs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_carlos_emulators.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

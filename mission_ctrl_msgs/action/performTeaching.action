@@ -1,0 +1,5 @@
+string task_name
+---
+bool succeeded
+string description
+---
