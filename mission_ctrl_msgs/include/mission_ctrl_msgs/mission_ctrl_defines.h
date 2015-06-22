@@ -18,8 +18,10 @@
 #define CARLOS_VISION_GET_MODE_SRV "/carlos/vision/get_mode"
 
 /* Actions */
-#define CARLOS_WELD_ACTION    "/carlos/execute_weld"
-#define CARLOS_MOVE_ACTION    "/carlos/move_platform"
+#define CARLOS_WELD_ACTION         "/carlos/execute_weld"
+#define CARLOS_DISTRIBUTION_ACTION "/carlos/generate_distribution"
+#define CARLOS_MOVE_ACTION         "/carlos/move_platform"
+#define CARLOS_PROJECTION_ACTION   "/carlos/projection_pose"
 /////////////////////////////////
 
 /* Parameters */
