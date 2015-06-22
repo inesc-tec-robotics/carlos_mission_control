@@ -26,3 +26,7 @@
 *.exe
 *.out
 *.app
+
+*.txt.user
+*.directory
+build/

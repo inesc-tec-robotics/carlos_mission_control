@@ -1,0 +1,5 @@
+string name
+string description	#optional
+---
+bool success
+string description
