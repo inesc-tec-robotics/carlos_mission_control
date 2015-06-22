@@ -354,7 +354,8 @@ struct InstructionStateMachine_ : public msm::front::state_machine_def<Instructi
             Row < stopped_s,            start_e,            nav_s,          none,                       And_<hw_idle_g, mission_instructable_g >                >,
             Row < stopped_s,            hw_fail_e,          hw_error_s,     none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
-            Row < nav_s,                nav_done_e,         generate_s,     none,                       none                >,
+            Row < nav_s,                nav_done_e,         generate_s,     none,                       task_gen_done_g >,          //else if stud gen HAS been done
+            Row < nav_s,                nav_done_e,         generate_s,     none,                       Not_<task_gen_done_g> >,    //if stud generation NOT done
             Row < nav_s,                nav_fail_e,         nav_error_s,    none,                       none                >,
             Row < nav_s,                hw_fail_e,          hw_error_s,     none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
@@ -376,11 +377,14 @@ struct InstructionStateMachine_ : public msm::front::state_machine_def<Instructi
             Row < nav_error_s,          abort_e,            stopped_s,      none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < gen_error_s,          retry_e,            generate_s,     none,                       hw_idle_g           >,
-            Row < gen_error_s,          skip_task_e,        stopped_s,      set_remaining_studs_a,      Not_<more_tasks_g>  >,
-            Row < gen_error_s,          skip_task_e,        nav_s,          ActionSequence_< mpl::vector<set_remaining_studs_a, increment_task_a> >,     more_tasks_g  >, //jump to next task is more exists
+            Row < gen_error_s,          skip_task_e,        stopped_s,      none,                       Not_<more_tasks_g>  >,
+            Row < gen_error_s,          skip_task_e,        nav_s,          increment_task_a,           more_tasks_g        >, //jump to next task is more exists
             Row < gen_error_s,          abort_e,            stopped_s,      none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
-
+            Row < teach_error_s,        retry_e,            teach_s,        none,                       hw_idle_g           >,
+            Row < teach_error_s,        skip_task_e,        stopped_s,      none,                       Not_<more_tasks_g>  >,
+            Row < teach_error_s,        skip_task_e,        nav_s,          increment_task_a,           more_tasks_g        >, //jump to next task is more exists
+            Row < teach_error_s,        abort_e,            stopped_s,      none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < wait_cancel_s,        cancelled_e,        stopped_s,      none,                       none                >
             > {};

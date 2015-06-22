@@ -186,7 +186,7 @@ bool UiAPI::execStartCB(mission_control::execStart::Request &request, mission_co
     return true;
 }
 
-bool UiAPI::execAbortCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+bool UiAPI::execAbortCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_INFO_STREAM("execAbortCB");
 
@@ -195,7 +195,7 @@ bool UiAPI::execAbortCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::
     return true;
 }
 
-bool UiAPI::execPauseCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+bool UiAPI::execPauseCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_INFO_STREAM("execPauseCB");
 
@@ -204,7 +204,7 @@ bool UiAPI::execPauseCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::
     return true;
 }
 
-bool UiAPI::execSkipStudCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+bool UiAPI::execSkipStudCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_INFO_STREAM("execSkipStudCB");
 
@@ -213,7 +213,7 @@ bool UiAPI::execSkipStudCB(std_srvs::Trigger::Request &request, std_srvs::Trigge
     return true;
 }
 
-bool UiAPI::execSkipTaskCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+bool UiAPI::execSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_INFO_STREAM("execSkipTaskCB");
 
@@ -222,7 +222,7 @@ bool UiAPI::execSkipTaskCB(std_srvs::Trigger::Request &request, std_srvs::Trigge
     return true;
 }
 
-bool UiAPI::execRetryCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response)
+bool UiAPI::execRetryCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_INFO_STREAM("execRetryCB");
 

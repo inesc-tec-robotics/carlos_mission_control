@@ -110,6 +110,7 @@ add_service_files(
    execStart.srv
    execAbort.srv
    execPause.srv
+   Trigger.srv
  )
 
 ## Generate actions in the 'action' folder

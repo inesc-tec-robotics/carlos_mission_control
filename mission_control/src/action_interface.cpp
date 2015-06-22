@@ -10,33 +10,36 @@ using namespace std;
 ActionInterface::ActionInterface(ExecutionEngine* ee) : ee_(ee)
 {
     //initialise action clients
-    platform_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction>(CARLOS_MOVE_ACTION, true);
-    arm_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction>(CARLOS_WELD_ACTION, true);
+    move_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction>(CARLOS_MOVE_ACTION, true);
+    weld_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction>(CARLOS_WELD_ACTION, true);
 
-    platform_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
-    arm_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
+    move_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
+    weld_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
 }
 
 ActionInterface::~ActionInterface()
 {
-    delete platform_client_;
-    delete arm_client_;
+    delete move_client_;
+    delete weld_client_;
 }
 
-void ActionInterface::sendArmGoal(mission_ctrl_msgs::executeWeldGoal goal)
+void ActionInterface::sendWeldGoal(string task_name)
 {
-    arm_client_->sendGoal(
+    mission_ctrl_msgs::executeWeldGoal goal;
+    goal.task_name = task_name;
+
+    weld_client_->sendGoal(
             goal,
             boost::bind(&ActionInterface::armFinishedCB, this, _1, _2),
             boost::bind(&ActionInterface::armActiveCB, this),
             boost::bind(&ActionInterface::armFeedbackCB, this, _1));
 }
 
-void ActionInterface::sendPlatformGoal(mission_ctrl_msgs::movePlatformGoal goal)
+void ActionInterface::sendMoveGoal(mission_ctrl_msgs::movePlatformGoal goal)
 {
     cout << "sending goal..." << endl;
 
-    platform_client_->sendGoal(
+    move_client_->sendGoal(
             goal,
             boost::bind(&ActionInterface::platformFinishedCB, this, _1, _2),
             boost::bind(&ActionInterface::platformActiveCB, this),
@@ -45,14 +48,30 @@ void ActionInterface::sendPlatformGoal(mission_ctrl_msgs::movePlatformGoal goal)
     cout << "goal send!" << endl;
 }
 
+void ActionInterface::sendTeachGoal(string task_name)
+{
+    mission_ctrl_msgs::performTeachingGoal goal;
+
+    goal.task_name = task_name;
+
+
+}
+
+void ActionInterface::sendGenPosGoal(string task_name)
+{
+    mission_ctrl_msgs::generateStudDistributionGoal goal;
+
+    goal.task_name = task_name;
+}
+
 void ActionInterface::cancelArmGoal()
 {
-    arm_client_->cancelAllGoals();
+    weld_client_->cancelAllGoals();
 }
 
 void ActionInterface::cancelPlatformGoal()
 {
-    platform_client_->cancelAllGoals();
+    move_client_->cancelAllGoals();
 }
 
 void ActionInterface::cancelAllGoals()

@@ -7,10 +7,14 @@
 #include "actionlib/client/simple_action_client.h"
 #include "mission_ctrl_msgs/executeWeldAction.h"
 #include "mission_ctrl_msgs/movePlatformAction.h"
+#include "mission_ctrl_msgs/performTeachingAction.h"
+#include "mission_ctrl_msgs/generateStudDistributionAction.h"
 #include "execution_engine.hpp"
 
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction> movePlatform_client;
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction> executeWeld_client;
+typedef actionlib::SimpleActionClient<mission_ctrl_msgs::performTeachingAction> performTeach_client;
+typedef actionlib::SimpleActionClient<mission_ctrl_msgs::generateStudDistributionAction> generateStudPos_client;
 
 class ActionInterface
 {
@@ -18,8 +22,11 @@ public:
     ActionInterface(ExecutionEngine* ee);
     ~ActionInterface();
 
-    void sendArmGoal(mission_ctrl_msgs::executeWeldGoal goal);
-    void sendPlatformGoal(mission_ctrl_msgs::movePlatformGoal goal);
+    void sendWeldGoal(std::string task_name);
+    void sendMoveGoal(mission_ctrl_msgs::movePlatformGoal goal);
+
+    void sendTeachGoal(std::string task_name);
+    void sendGenPosGoal(std::string task_name);
 
     void cancelArmGoal();
     void cancelPlatformGoal();
@@ -39,9 +46,10 @@ private:
 
     //action clients:
     ExecutionEngine* ee_;
-    movePlatform_client* platform_client_;
-    executeWeld_client* arm_client_;
-
+    movePlatform_client* move_client_;
+    executeWeld_client* weld_client_;
+    performTeach_client* teach_client_;
+    generateStudPos_client* gen_pos_client_;
 };
 
 #endif // ACTION_INTERFACE_HPP_

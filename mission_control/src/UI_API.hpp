@@ -28,7 +28,7 @@
 #include "mission_control/execPause.h"
 #include "mission_control/createNewMission.h"
 #include "mission_control/ExecProgress.h"
-#include "std_srvs/Trigger.h"
+#include "mission_control/Trigger.h"
 
 
 
@@ -55,11 +55,11 @@ private:
     bool createNewMissionCB(mission_control::createNewMission::Request &request, mission_control::createNewMission::Response &response);
 
     bool execStartCB(mission_control::execStart::Request &request, mission_control::execStart::Response &response);
-    bool execAbortCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response);
-    bool execPauseCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response);
-    bool execSkipStudCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response);
-    bool execSkipTaskCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response);
-    bool execRetryCB(std_srvs::Trigger::Request &request, std_srvs::Trigger::Response &response);
+    bool execAbortCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool execPauseCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool execSkipStudCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool execSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool execRetryCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
 
 
     void statePubTimeout(const ros::TimerEvent &event);

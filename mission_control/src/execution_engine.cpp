@@ -140,7 +140,7 @@ struct nav_s : public msm::front::state<>
         goal.nav_goal = ExecutionEngine::getInstance()->convert2PoseStamped(task_params.navigation_goal.x, task_params.navigation_goal.y, task_params.navigation_goal.yaw);
 
         //send goal
-        aci_->sendPlatformGoal(goal);
+        aci_->sendMoveGoal(goal);
     }
 
     template <class Event,class FSM>
@@ -158,12 +158,8 @@ struct mani_s : public msm::front::state<>
         ROS_DEBUG("Execution engine entered manipulation state.");
         ROS_INFO_STREAM("Welding of task " << ExecutionEngine::getCurrentTask() << " started.");
 
-        //create goal
-        mission_ctrl_msgs::executeWeldGoal goal;
-        goal.task_name = ExecutionEngine::getCurrentTask();
-
         //send goal
-        aci_->sendArmGoal(goal);
+        aci_->sendWeldGoal(ExecutionEngine::getCurrentTask());
     }
 
     template <class Event,class FSM>
