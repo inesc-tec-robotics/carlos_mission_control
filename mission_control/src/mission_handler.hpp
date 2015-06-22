@@ -25,7 +25,9 @@ public:
     {
         compare_map_ = boost::assign::map_list_of
                 (mission::EMPTY,                    "empty")
+                (mission::PARTIALLY_CONFIGURED,     "partially_configured")
                 (mission::CONFIGURED,               "configured")
+                (mission::PARTIALLY_INSTRUCTED,     "partially_instructed")
                 (mission::INSTRUCTED,               "instructed")
                 (mission::PARTIALLY_COMPLETED,      "partially_completed")
                 (mission::COMPLETED,                "completed");
