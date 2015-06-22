@@ -1,6 +1,9 @@
 #ifndef ACTION_INTERFACE_HPP_
 #define ACTION_INTERFACE_HPP_
 
+class ExecutionEngine;
+class InstructionEngine;
+
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
@@ -9,7 +12,6 @@
 #include "mission_ctrl_msgs/movePlatformAction.h"
 #include "mission_ctrl_msgs/performTeachingAction.h"
 #include "mission_ctrl_msgs/generateStudDistributionAction.h"
-#include "execution_engine.hpp"
 
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction> movePlatform_client;
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction> executeWeld_client;
@@ -19,8 +21,11 @@ typedef actionlib::SimpleActionClient<mission_ctrl_msgs::generateStudDistributio
 class ActionInterface
 {
 public:
-    ActionInterface(ExecutionEngine* ee);
+    ActionInterface();
     ~ActionInterface();
+
+    void initExecution(ExecutionEngine* ee);
+    void initInstruction(InstructionEngine* ie);
 
     void sendWeldGoal(std::string task_name);
     void sendMoveGoal(mission_ctrl_msgs::movePlatformGoal goal);
@@ -46,6 +51,7 @@ private:
 
     //action clients:
     ExecutionEngine* ee_;
+    InstructionEngine* ie_;
     movePlatform_client* move_client_;
     executeWeld_client* weld_client_;
     performTeach_client* teach_client_;

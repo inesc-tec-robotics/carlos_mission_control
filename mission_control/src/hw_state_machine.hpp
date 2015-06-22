@@ -23,6 +23,16 @@ namespace hardware
 class state
 {
 public:
+
+    state()
+    {
+        compare_map_ = boost::assign::map_list_of
+                    (hardware::IDLE,            "idle")
+                    (hardware::BUSY,            "busy")
+                    (hardware::ERROR,           "error")
+                    (hardware::NOT_CONNECTED,   "not_connected");
+    }
+
     void operator=( const std::string state_string )
     {
         for(std::map<hardware::states, std::string>::const_iterator it = compare_map_.begin();it!=compare_map_.end();it++)
@@ -70,11 +80,7 @@ private:
     hardware::states state_;
     std::string description_;
 
-    std::map<hardware::states, std::string> compare_map_ = boost::assign::map_list_of
-            (hardware::IDLE,            "idle")
-            (hardware::BUSY,            "busy")
-            (hardware::ERROR,           "error")
-            (hardware::NOT_CONNECTED,   "not_connected");
+    std::map<hardware::states, std::string> compare_map_;
 
 };
 

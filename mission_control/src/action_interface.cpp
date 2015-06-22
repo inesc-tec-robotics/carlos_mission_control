@@ -2,25 +2,48 @@
 #include "action_interface.hpp"
 #include "mission_handler.hpp"
 #include "mission_ctrl_msgs/mission_ctrl_defines.h"
+#include "execution_engine.hpp"
+#include "instruction_engine.hpp"
 
 #define WAIT_FOR_SERVER_TIMEOUT 3.0 // sec
 
 using namespace std;
 
-ActionInterface::ActionInterface(ExecutionEngine* ee) : ee_(ee)
+ActionInterface::ActionInterface()
 {
-    //initialise action clients
-    move_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction>(CARLOS_MOVE_ACTION, true);
-    weld_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction>(CARLOS_WELD_ACTION, true);
-
-    move_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
-    weld_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
 }
 
 ActionInterface::~ActionInterface()
 {
-    delete move_client_;
-    delete weld_client_;
+    if(move_client_ != NULL)
+        delete move_client_;
+
+    if(weld_client_ != NULL)
+        delete weld_client_;
+
+    if(teach_client_ != NULL)
+        delete teach_client_;
+
+    if(gen_pos_client_ != NULL)
+        delete gen_pos_client_;
+}
+
+void ActionInterface::initExecution(ExecutionEngine* ee)
+{
+    ee_ = ee;
+    move_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction>(CARLOS_MOVE_ACTION, true);
+    weld_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction>(CARLOS_WELD_ACTION, true);
+    move_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
+    weld_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
+}
+
+void ActionInterface::initInstruction(InstructionEngine* ie)
+{
+    ie_ = ie;
+    teach_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::performTeachingAction>(CARLOS_TEACHING_ACTION, true);
+    gen_pos_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::generateStudDistributionAction>(CARLOS_DISTRIBUTION_ACTION, true);
+    teach_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
+    gen_pos_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
 }
 
 void ActionInterface::sendWeldGoal(string task_name)

@@ -404,7 +404,8 @@ ExecutionEngine::ExecutionEngine()
     ExecutionEngine::task_n=0;
     ExecutionEngine::tasks = MissionHandler::getInstance()->getTaskList();
 
-    aci_ = new ActionInterface(this);
+    aci_ = new ActionInterface();
+    aci_->initExecution(this);
 
     esm_ = boost::shared_ptr<ExecStateMachine>(new ExecutionEngine::ExecStateMachine());
     esm_->start();

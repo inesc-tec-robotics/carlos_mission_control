@@ -21,7 +21,16 @@ class state
 {
 public:
 
-    state() {}
+    state()
+    {
+        compare_map_ = boost::assign::map_list_of
+                (mission::EMPTY,                    "empty")
+                (mission::CONFIGURED,               "configured")
+                (mission::INSTRUCTED,               "instructed")
+                (mission::PARTIALLY_COMPLETED,      "partially_completed")
+                (mission::COMPLETED,                "completed");
+    }
+
     state(mission::states s) : state_(s) {}
 
     void operator=( const std::string state_string )
@@ -64,12 +73,7 @@ public:
 private:
     mission::states state_;
 
-    std::map<mission::states, std::string> compare_map_ = boost::assign::map_list_of
-            (mission::EMPTY,                    "empty")
-            (mission::CONFIGURED,               "configured")
-            (mission::INSTRUCTED,               "instructed")
-            (mission::PARTIALLY_COMPLETED,      "partially_completed")
-            (mission::COMPLETED,                "completed");
+    std::map<mission::states, std::string> compare_map_;
 
 };
 

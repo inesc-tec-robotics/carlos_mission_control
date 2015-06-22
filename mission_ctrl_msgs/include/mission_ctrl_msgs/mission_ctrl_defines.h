@@ -22,6 +22,7 @@
 #define CARLOS_DISTRIBUTION_ACTION "/carlos/generate_distribution"
 #define CARLOS_MOVE_ACTION         "/carlos/move_platform"
 #define CARLOS_PROJECTION_ACTION   "/carlos/projection_pose"
+#define CARLOS_TEACHING_ACTION     "/carlos/perform_teaching"
 /////////////////////////////////
 
 /* Parameters */
