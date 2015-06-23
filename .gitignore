@@ -30,3 +30,5 @@
 *.txt.user
 *.directory
 build/
+*.yaml~
+*.*~
