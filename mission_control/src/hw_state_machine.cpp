@@ -2,7 +2,7 @@
 #include "hw_state_machine.hpp"
 
 
-#define HB_TIMEOUT_MULTIPLIER 1.5           //multiplier for heartbeat timeout
+#define HB_TIMEOUT_MULTIPLIER 5           //multiplier for heartbeat timeout
 
 using namespace std;
 
