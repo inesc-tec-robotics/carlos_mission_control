@@ -94,7 +94,8 @@ include_directories(${QT_INCLUDE_DIR})
    DeviceState.msg
    HardwareStates.msg
    uiMessage.msg
-   ExecProgress.msg
+   Function.msg
+   Progress.msg
  )
 
 ## Generate services in the 'srv' folder

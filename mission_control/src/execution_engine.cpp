@@ -18,15 +18,14 @@
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
-#include "mission_control/ExecProgress.h"
+#include "mission_control/Progress.h"
 #include "hw_state_machine.hpp"
 #include "mission_handler.hpp"
 #include "action_interface.hpp"
 #include "execution_engine.hpp"
 #include "system_engine.hpp"
 #include "UI_API.hpp"
-
-
+#include "function_defines.hpp"
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
@@ -34,20 +33,12 @@ using namespace msm::front;
 using namespace boost::msm::front::euml;
 using namespace std;
 
-//action client interface:
-ActionInterface* aci_;
-
-//static task params:
-vector<string> ExecutionEngine::tasks;
-int ExecutionEngine::task_n;
-
-// execution state machine:
+//execution state machine:
 namespace
 {
 ////////////////////////////
 /// Events
 ////////////////////////////
-
 //user events
 struct start_e {};
 struct pause_e {};
@@ -65,24 +56,36 @@ struct task_error_e {}; //event for other task errors than welding failed
 struct hw_fail_e {};
 struct goal_cancelled_e{};
 
+////////////////////////////
+/// Flags
+////////////////////////////
+struct startPossible_f{};
+struct pausePossible_f{};
+struct abortPossible_f{};
+struct retryPossible_f{};
+struct skipTaskPossible_f{};
+struct skipStudPossible_f{};
+
 //////////////
 ///STATES
 /// //////////
-
-struct idle_s : public msm::front::state<>
-{
-    template <class Event,class FSM>
-    void on_entry(Event const&,FSM& )
-    {
-        cout << "initializing task" << endl;
-    }
-};
 struct nav_error_s : public msm::front::state<>
 {
+    typedef mpl::vector3<skipTaskPossible_f,
+    retryPossible_f,
+    abortPossible_f>      flag_list;
+
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::NAV_ERROR;
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                            (EXEC_ABORT)
+                                                            (EXEC_RETRY)
+                                                            (EXEC_SKIP_TASK) );
+        ExecutionEngine::getInstance()->sendProgressUpdate();
+
         cout << "error in navigation - call operator" << endl;
     }
 
@@ -94,10 +97,22 @@ struct nav_error_s : public msm::front::state<>
 };
 struct weld_error_s : public msm::front::state<>
 {
+    typedef mpl::vector4<skipStudPossible_f,
+    skipTaskPossible_f,
+    retryPossible_f,
+    abortPossible_f>      flag_list;
+
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::WELD_ERROR;
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                            (EXEC_ABORT)
+                                                            (EXEC_RETRY)
+                                                            (EXEC_SKIP_TASK)
+                                                            (EXEC_SKIP_STUD) );
+        ExecutionEngine::getInstance()->sendProgressUpdate();
 
         cout << "error in manipulation - call operator" << endl;
     }
@@ -110,10 +125,16 @@ struct weld_error_s : public msm::front::state<>
 };
 struct hw_error_s : public msm::front::state<>
 {
+    typedef mpl::vector2<retryPossible_f,abortPossible_f>      flag_list;
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::HW_ERROR;
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                            (EXEC_ABORT)
+                                                            (EXEC_RETRY) );
+        ExecutionEngine::getInstance()->sendProgressUpdate();
 
         cout << "hardware error - call operator" << endl;
     }
@@ -126,46 +147,60 @@ struct hw_error_s : public msm::front::state<>
 };
 struct nav_s : public msm::front::state<>
 {
+    typedef mpl::vector2<pausePossible_f,abortPossible_f>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const& ,FSM&)
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::NAV;
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                            (EXEC_ABORT)
+                                                            (EXEC_PAUSE) );
+        ExecutionEngine::getInstance()->sendProgressUpdate();
+
         ROS_DEBUG("Execution engine entered navigation state.");
-        ROS_INFO_STREAM("Navigating to task " << ExecutionEngine::getCurrentTask() << ".");
+        ROS_INFO_STREAM("Navigating to task " << ExecutionEngine::getInstance()->getCurrentTask() << ".");
 
         //get goal data:
-        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(ExecutionEngine::getCurrentTask());
+        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(ExecutionEngine::getInstance()->getCurrentTask());
 
         //create goal:
         mission_ctrl_msgs::movePlatformGoal goal;
         goal.nav_goal = ExecutionEngine::getInstance()->convert2PoseStamped(task_params.navigation_goal.x, task_params.navigation_goal.y, task_params.navigation_goal.yaw);
 
         //send goal
-        aci_->sendMoveGoal(goal);
+        ExecutionEngine::getInstance()->aci_->sendMoveGoal(goal);
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        ROS_INFO_STREAM("Navigation to task " << ExecutionEngine::getCurrentTask() << " finished.");
+        ROS_INFO_STREAM("Navigation to task " << ExecutionEngine::getInstance()->getCurrentTask() << " finished.");
         ROS_DEBUG("Execution engine exiting navigation state");
     }
 };
 struct mani_s : public msm::front::state<>
 {
+    typedef mpl::vector2<pausePossible_f,abortPossible_f>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const& ,FSM&)
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::WELD;
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                            (EXEC_ABORT)
+                                                            (EXEC_PAUSE) );
+        ExecutionEngine::getInstance()->sendProgressUpdate();
+
         ROS_DEBUG("Execution engine entered manipulation state.");
-        ROS_INFO_STREAM("Welding of task " << ExecutionEngine::getCurrentTask() << " started.");
+        ROS_INFO_STREAM("Welding of task " << ExecutionEngine::getInstance()->getCurrentTask() << " started.");
 
         //send goal
-        aci_->sendWeldGoal(ExecutionEngine::getCurrentTask());
+        ExecutionEngine::getInstance()->aci_->sendWeldGoal(ExecutionEngine::getInstance()->getCurrentTask());
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        ROS_INFO_STREAM("Welding of task " << ExecutionEngine::getCurrentTask() << " finished.");
+        ROS_INFO_STREAM("Welding of task " << ExecutionEngine::getInstance()->getCurrentTask() << " finished.");
         ROS_DEBUG("Execution engine exiting manipulation state.");
     }
 };
@@ -174,14 +209,25 @@ struct wait_cancel_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::WAIT_CANCEL;
+        vector<string> temp;
+        ExecutionEngine::getInstance()->setEnabledFunctions(temp);
+        ExecutionEngine::getInstance()->sendProgressUpdate();
+
+
         ROS_INFO("Execution engine waiting for goal cancel.");
     }
 };
 struct stopped_s : public msm::front::state<>
 {
+    typedef mpl::vector1<startPossible_f>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
+        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::STOPPED;
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (EXEC_START) );
+        ExecutionEngine::getInstance()->sendProgressUpdate();
+
         //update mission state:
         if(MissionHandler::getInstance()->isLoaded())
             MissionHandler::getInstance()->updateMissionState();
@@ -206,10 +252,10 @@ struct increment_task_a
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
         //update task state:
-        MissionHandler::getInstance()->updateTaskState(ExecutionEngine::getCurrentTask());
+        MissionHandler::getInstance()->updateTaskState(ExecutionEngine::getInstance()->getCurrentTask());
 
         //increment the task iterator
-        ExecutionEngine::task_n++;
+        ExecutionEngine::getInstance()->task_n++;
     }
 };
 struct set_remaining_studs_a
@@ -233,7 +279,7 @@ struct reset_task_counter_a
     template <class FSM,class EVT,class SourceState,class TargetState>
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
-        ExecutionEngine::task_n = 0;
+        ExecutionEngine::getInstance()->task_n = 0;
     }
 };
 struct send_execute_done_a //not used currently
@@ -250,10 +296,10 @@ struct prepare_execution_a
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
         //update task list:
-        ExecutionEngine::tasks = MissionHandler::getInstance()->getExecutableTasks();
+        ExecutionEngine::getInstance()->tasks = MissionHandler::getInstance()->getExecutableTasks();
 
         //reset the task counter:
-        ExecutionEngine::task_n = 0;
+        ExecutionEngine::getInstance()->task_n = 0;
     }
 };
 struct cancel_goals_a
@@ -261,7 +307,7 @@ struct cancel_goals_a
     template <class FSM,class EVT,class SourceState,class TargetState>
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
-        aci_->cancelAllGoals();
+        ExecutionEngine::getInstance()->aci_->cancelAllGoals();
     }
 };
 
@@ -285,7 +331,7 @@ struct more_tasks_g
     template <class FSM,class EVT,class SourceState,class TargetState>
     bool operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
     {
-        if(ExecutionEngine::task_n == (int)ExecutionEngine::tasks.size()-1)
+        if(ExecutionEngine::getInstance()->task_n == (int)ExecutionEngine::getInstance()->tasks.size()-1)
             return false;
         else
             return true;
@@ -401,8 +447,8 @@ ExecutionEngine* ExecutionEngine::getInstance()
 
 ExecutionEngine::ExecutionEngine()
 {
-    ExecutionEngine::task_n=0;
-    ExecutionEngine::tasks = MissionHandler::getInstance()->getTaskList();
+    ExecutionEngine::getInstance()->task_n=0;
+    ExecutionEngine::getInstance()->tasks = MissionHandler::getInstance()->getTaskList();
 
     aci_ = new ActionInterface();
     aci_->initExecution(this);
@@ -460,10 +506,10 @@ void ExecutionEngine::maniActive()
 void ExecutionEngine::maniFeedback()
 {
     //send signal to UIAPI that there is an update:
-    mission_control::ExecProgress progress;
+    mission_control::Progress progress;
 
     progress.current_mission = MissionHandler::getInstance()->getLoadedName();
-    progress.current_task = ExecutionEngine::getCurrentTask();
+    progress.current_task = ExecutionEngine::getInstance()->getCurrentTask();
     //progress.exec_engine_state = esm_->
 
     UiAPI::getInstance()->execProgressUpdate(progress);
@@ -496,10 +542,10 @@ void ExecutionEngine::goalCancelled()
 
 string ExecutionEngine::getCurrentTask()
 {
-    if(ExecutionEngine::tasks.size() <= 0)
+    if(ExecutionEngine::getInstance()->tasks.size() <= 0)
         return "none";
 
-    return ExecutionEngine::tasks[ExecutionEngine::task_n];
+    return ExecutionEngine::getInstance()->tasks[ExecutionEngine::getInstance()->task_n];
 }
 
 geometry_msgs::PoseStamped ExecutionEngine::convert2PoseStamped(double x, double y, double yaw)
@@ -536,3 +582,34 @@ geometry_msgs::PoseStamped ExecutionEngine::convert2PoseStamped(double x, double
     return nav_goal;
 }
 
+void ExecutionEngine::sendProgressUpdate()
+{
+    mission_control::Progress progress;
+    progress.engine_state = (unsigned int)current_state_;
+    progress.current_mission = MissionHandler::getInstance()->getLoadedName();
+    progress.current_task = getCurrentTask();
+
+    for(map<string,bool>::iterator itr=enabled_functions.begin();itr!=enabled_functions.end();itr++)
+    {
+        mission_control::Function func;
+        func.name = itr->first;
+        func.enabled = itr->second;
+        progress.enabled_functions.push_back(func);
+    }
+
+    UiAPI::getInstance()->execProgressUpdate(progress);
+}
+
+void ExecutionEngine::setEnabledFunctions(vector<string> functions)
+{
+    enabled_functions = boost::assign::map_list_of(EXEC_START, false)
+            (EXEC_ABORT, false)
+            (EXEC_PAUSE, false)
+            (EXEC_RETRY, false)
+            (EXEC_SKIP_STUD, false)
+            (EXEC_SKIP_TASK, false);
+    for(int i=0;i<(int)functions.size();i++)
+    {
+        enabled_functions[functions[i]] = true;
+    }
+}

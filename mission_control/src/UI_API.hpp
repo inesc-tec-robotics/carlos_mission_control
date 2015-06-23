@@ -27,7 +27,7 @@
 #include "mission_control/execAbort.h"
 #include "mission_control/execPause.h"
 #include "mission_control/createNewMission.h"
-#include "mission_control/ExecProgress.h"
+#include "mission_control/Progress.h"
 #include "mission_control/Trigger.h"
 
 
@@ -40,7 +40,7 @@ public:
 
     ~UiAPI();
 
-    void execProgressUpdate(mission_control::ExecProgress &progress);
+    void execProgressUpdate(mission_control::Progress &progress);
 
 private:
 
@@ -98,6 +98,7 @@ private:
     ros::Publisher state_pub_;
     ros::Publisher ui_message_pub_;
     ros::Publisher exec_progress_pub_;
+    ros::Publisher instr_progress_pub_;
 
     ros::Timer state_pub_timer_;
 };

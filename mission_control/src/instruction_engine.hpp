@@ -1,6 +1,8 @@
 #ifndef INSTRUCTIONENGINE_HPP_
 #define INSTRUCTIONENGINE_HPP_
 
+class ActionInterface;
+
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
@@ -21,6 +23,11 @@ public:
     // event methods
     bool start();
     bool abort();
+
+    geometry_msgs::PoseStamped convert2PoseStamped(double x, double y, double yaw);
+
+    //action client interface:
+    ActionInterface* aci_;
 
 private:
 

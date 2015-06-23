@@ -39,7 +39,10 @@ UiAPI::UiAPI()
     ROS_INFO("ROS ServiceServers for UI API started");
 
     //publisher for execution progress:
-    exec_progress_pub_ = n.advertise<mission_control::ExecProgress>("mission_control/UI/ExecProgress",10);
+    exec_progress_pub_ = n.advertise<mission_control::Progress>("mission_control/UI/ExecProgress",10);
+
+    //publisher for instruction progress:
+    instr_progress_pub_ = n.advertise<mission_control::Progress>("mission_control/UI/InstrProgress",10);
 
     //create publisher of states:
     state_pub_ = n.advertise<mission_control::HardwareStates>("mission_control/UI/HardwareStates",10);
@@ -52,7 +55,7 @@ UiAPI::~UiAPI()
 {
 }
 
-void UiAPI::execProgressUpdate(mission_control::ExecProgress &progress)
+void UiAPI::execProgressUpdate(mission_control::Progress &progress)
 {
     exec_progress_pub_.publish(progress);
 }

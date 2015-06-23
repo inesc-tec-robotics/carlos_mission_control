@@ -47,11 +47,11 @@ private:
     void armActiveCB();
     void armFeedbackCB(const mission_ctrl_msgs::executeWeldFeedbackConstPtr &feedback);
 
-
-
-    //action clients:
+    //pointer to parents:
     ExecutionEngine* ee_;
     InstructionEngine* ie_;
+
+    //action clients:
     movePlatform_client* move_client_;
     executeWeld_client* weld_client_;
     performTeach_client* teach_client_;

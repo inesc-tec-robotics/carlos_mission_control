@@ -12,6 +12,12 @@
 #include <boost/msm/front/functor_row.hpp>
 #include <boost/msm/front/euml/common.hpp>
 #include <boost/msm/front/euml/operator.hpp>
+#include "math.h"
+#include "cmath"
+#include <eigen3/Eigen/Geometry>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include "hw_state_machine.hpp"
 #include "mission_handler.hpp"
 #include "instruction_engine.hpp"
@@ -31,7 +37,7 @@ using namespace std;
 vector<string> InstructionEngine::tasks;
 int InstructionEngine::task_n;
 
-// execution state machine:
+// Instruction state machine:
 namespace
 {
 ////////////////////////////
@@ -59,14 +65,6 @@ struct cancelled_e{};
 ///STATES
 /// //////////
 
-struct idle_s : public msm::front::state<>
-{
-    template <class Event,class FSM>
-    void on_entry(Event const&,FSM& )
-    {
-        cout << "initializing task" << endl;
-    }
-};
 struct generate_s : public msm::front::state<>
 {
     // every (optional) entry/exit methods get the event passed.
@@ -182,17 +180,28 @@ struct teach_error_s : public msm::front::state<>
 };
 struct nav_s : public msm::front::state<>
 {
-    // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const&,FSM& )
+    void on_entry(Event const& ,FSM&)
     {
-        ROS_INFO_STREAM("Navigate state");
+        ROS_DEBUG("Instruction engine entered navigation state.");
+        ROS_INFO_STREAM("Navigating to task " << InstructionEngine::getCurrentTask() << ".");
+
+        //get goal data:
+        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(InstructionEngine::getCurrentTask());
+
+        //create goal:
+        mission_ctrl_msgs::movePlatformGoal goal;
+        goal.nav_goal = InstructionEngine::getInstance()->convert2PoseStamped(task_params.navigation_goal.x, task_params.navigation_goal.y, task_params.navigation_goal.yaw);
+
+        //send goal
+        InstructionEngine::getInstance()->aci_->sendMoveGoal(goal);
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        ROS_INFO_STREAM("Navigation finished");
+        ROS_INFO_STREAM("Navigation to task " << InstructionEngine::getCurrentTask() << " finished.");
+        ROS_DEBUG("Instruction engine exiting navigation state");
     }
 };
 struct nav_error_s : public msm::front::state<>
@@ -366,7 +375,7 @@ struct InstructionStateMachine_ : public msm::front::state_machine_def<Instructi
             Row < generate_s,           hw_fail_e,          hw_error_s,     none,                       none                >,
 
             //  +---------+-------------+---------+---------------------+----------------------+
-            Row < teach_s,              teach_done_e,       stopped_s,      none,                       none                >, //after execution of last task
+            Row < teach_s,              teach_done_e,       stopped_s,      none,                       none                >, //after instruction of last task
             Row < teach_s,              teach_done_e,       nav_s,          increment_task_a,           more_tasks_g        >,
             Row < teach_s,              teach_fail_e,       teach_error_s,  none,                       none                >,
             Row < teach_s,              abort_e,            wait_cancel_s,  cancel_goals_a,             none                >,
@@ -428,8 +437,11 @@ InstructionEngine* InstructionEngine::getInstance()
 
 InstructionEngine::InstructionEngine()
 {
-    //task_n=0;
-    //tasks = MissionHandler::getInstance()->getTaskList();
+    InstructionEngine::task_n=0;
+    InstructionEngine::tasks = MissionHandler::getInstance()->getTaskList();
+
+    aci_ = new ActionInterface();
+    aci_->initInstruction(this);
 
     ism_ = boost::shared_ptr<InstrStateMachine>(new InstructionEngine::InstrStateMachine());
     ism_->start();
@@ -452,6 +464,40 @@ string InstructionEngine::getCurrentTask()
         return "none";
 
     return InstructionEngine::tasks[InstructionEngine::task_n];
+}
+
+geometry_msgs::PoseStamped InstructionEngine::convert2PoseStamped(double x, double y, double yaw)
+{
+    geometry_msgs::PoseStamped nav_goal;
+
+    //position
+    nav_goal.pose.position.x = x;
+    nav_goal.pose.position.y = y;
+
+    //orientation
+    double Ra = yaw;
+    double Rb = 0.0;
+    double Rc = 0.0;
+
+    Eigen::Matrix3d rotation_matrix;
+    rotation_matrix(0,0) = std::cos(y) * std::cos(Rb);
+    rotation_matrix(0,1) = std::cos(Ra) * std::sin(Rb) * std::sin(Rc) - std::sin(Ra) * std::cos(Rc);
+    rotation_matrix(0,2) = std::cos(Ra) * std::sin(Rb) * std::cos(Rc) + std::sin(Ra) * std::sin(Rc);
+    rotation_matrix(1,0) = std::sin(Ra) * std::cos(Rb);
+    rotation_matrix(1,1) = std::sin(Ra) * std::sin(Rb) * std::sin(Rc) + std::cos(Ra) * std::cos(Rc);
+    rotation_matrix(1,2) = std::sin(Ra) * std::sin(Rb) * std::cos(Rc) - std::cos(Ra) * std::sin(Rc);
+    rotation_matrix(2,0) = -std::sin(Rb);
+    rotation_matrix(2,1) = std::cos(Rb) * std::sin(Rc);
+    rotation_matrix(2,2) = std::cos(Rb) * std::cos(Rc);
+
+    Eigen::Quaternion<double> rot_quaternions(rotation_matrix);
+
+    nav_goal.pose.orientation.w = rot_quaternions.w();
+    nav_goal.pose.orientation.x = rot_quaternions.x();
+    nav_goal.pose.orientation.y = rot_quaternions.y();
+    nav_goal.pose.orientation.z = rot_quaternions.z();
+
+    return nav_goal;
 }
 
 

@@ -1,6 +1,8 @@
 #ifndef EXECUTIONENGINE_HPP_
 #define EXECUTIONENGINE_HPP_
 
+class ActionInterface;
+
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
@@ -11,24 +13,31 @@
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction> movePlatform_client;
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction> executeWeld_client;
 
-//struct ExecutionProgress
-//{
-//    std::string mission;
-//    std::string task;
-//    std::string stud;
-
-//};
-
-
 class ExecutionEngine
 {
     friend class ActionInterface;
 
 public:
+    enum ExecState
+    {
+        STOPPED,
+        NAV,
+        WELD,
+        NAV_ERROR,
+        WELD_ERROR,
+        HW_ERROR,
+        WAIT_CANCEL
+    };
+
+public:
     static ExecutionEngine* getInstance();
-    static std::string getCurrentTask();
-    static std::vector<std::string> tasks;
-    static int task_n;
+    std::string getCurrentTask();
+    std::vector<std::string> tasks;
+    int task_n;
+
+
+    //current state:
+    ExecState current_state_;
 
     // event methods
     bool start();
@@ -40,6 +49,12 @@ public:
 
     geometry_msgs::PoseStamped convert2PoseStamped(double x, double y, double yaw);
 
+    void setEnabledFunctions(std::vector<std::string> functions);
+    void sendProgressUpdate();
+
+    //action client interface:
+    ActionInterface* aci_;
+
 private:
 
     struct ExecStateMachine;
@@ -49,7 +64,7 @@ private:
 
     static ExecutionEngine* instance_;
 
-
+    std::map<std::string,bool> enabled_functions;
 
     //action clients:
     movePlatform_client* platform_client_;
