@@ -21,6 +21,7 @@
 #define CARLOS_WELD_ACTION         "/carlos/execute_weld"
 #define CARLOS_DISTRIBUTION_ACTION "/carlos/generate_distribution"
 #define CARLOS_MOVE_ACTION         "/carlos/move_platform"
+#define CARLOS_MOVE_ARM_ACTION     "/carlos/move_arm"
 #define CARLOS_PROJECTION_ACTION   "/carlos/projection_pose"
 #define CARLOS_TEACHING_ACTION     "/carlos/perform_teaching"
 /////////////////////////////////
