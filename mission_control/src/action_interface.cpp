@@ -42,8 +42,10 @@ void ActionInterface::initInstruction(InstructionEngine* ie)
     ie_ = ie;
     teach_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::performTeachingAction>(CARLOS_TEACHING_ACTION, true);
     gen_pos_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::generateStudDistributionAction>(CARLOS_DISTRIBUTION_ACTION, true);
+    move_client_ = new actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction>(CARLOS_MOVE_ACTION, true);
     teach_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
     gen_pos_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
+    move_client_->waitForServer(ros::Duration(WAIT_FOR_SERVER_TIMEOUT));
 }
 
 void ActionInterface::sendWeldGoal(string task_name)
@@ -52,10 +54,10 @@ void ActionInterface::sendWeldGoal(string task_name)
     goal.task_name = task_name;
 
     weld_client_->sendGoal(
-            goal,
-            boost::bind(&ActionInterface::armFinishedCB, this, _1, _2),
-            boost::bind(&ActionInterface::armActiveCB, this),
-            boost::bind(&ActionInterface::armFeedbackCB, this, _1));
+                goal,
+                boost::bind(&ActionInterface::armFinishedCB, this, _1, _2),
+                boost::bind(&ActionInterface::armActiveCB, this),
+                boost::bind(&ActionInterface::armFeedbackCB, this, _1));
 }
 
 void ActionInterface::sendMoveGoal(mission_ctrl_msgs::movePlatformGoal goal)
@@ -63,10 +65,10 @@ void ActionInterface::sendMoveGoal(mission_ctrl_msgs::movePlatformGoal goal)
     cout << "sending goal..." << endl;
 
     move_client_->sendGoal(
-            goal,
-            boost::bind(&ActionInterface::platformFinishedCB, this, _1, _2),
-            boost::bind(&ActionInterface::platformActiveCB, this),
-            boost::bind(&ActionInterface::platformFeedbackCB, this, _1));
+                goal,
+                boost::bind(&ActionInterface::platformFinishedCB, this, _1, _2),
+                boost::bind(&ActionInterface::platformActiveCB, this),
+                boost::bind(&ActionInterface::platformFeedbackCB, this, _1));
 
     cout << "goal send!" << endl;
 }
@@ -76,6 +78,12 @@ void ActionInterface::sendTeachGoal(string task_name)
     mission_ctrl_msgs::performTeachingGoal goal;
 
     goal.task_name = task_name;
+
+    teach_client_->sendGoal(
+                goal,
+                boost::bind(&ActionInterface::teachFinishedCB, this, _1, _2),
+                boost::bind(&ActionInterface::teachActiveCB, this),
+                boost::bind(&ActionInterface::teachFeedbackCB, this, _1));
 
 
 }
@@ -97,7 +105,23 @@ void ActionInterface::cancelPlatformGoal()
     move_client_->cancelAllGoals();
 }
 
-void ActionInterface::cancelAllGoals()
+void ActionInterface::cancelTeachGoal()
+{
+    teach_client_->cancelAllGoals();
+}
+
+void ActionInterface::cancelGenPosGoal()
+{
+    gen_pos_client_->cancelAllGoals();
+}
+
+void ActionInterface::cancelInstrGoals()
+{
+    cancelGenPosGoal();
+    cancelTeachGoal();
+}
+
+void ActionInterface::cancelExecGoals()
 {
     cancelPlatformGoal();
     cancelArmGoal();
@@ -170,4 +194,67 @@ void ActionInterface::armFeedbackCB(const mission_ctrl_msgs::executeWeldFeedback
     ROS_INFO_STREAM("Received feedback from arm");
     MissionHandler::getInstance()->setStudState(ee_->getCurrentTask(),feedback->stud_id,(feedback->stud_state ? stud::SUCCEEDED : stud::FAILED)); //ain't complex code just a beauty?!
     ee_->maniFeedback();
+}
+
+void ActionInterface::teachFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::performTeachingResultConstPtr &result)
+{
+    switch(state.state_)
+    {
+    case actionlib::SimpleClientGoalState::SUCCEEDED:
+        ie_->teachDone();
+        break;
+    case actionlib::SimpleClientGoalState::PREEMPTED:
+        ie_->goalCancelled();
+        break;
+    case actionlib::SimpleClientGoalState::ABORTED:
+        ie_->teachFailed();
+        break;
+    case actionlib::SimpleClientGoalState::LOST:
+        ie_->teachFailed();
+        break;
+    default:
+        ie_->teachFailed();
+        break;
+    }
+}
+
+void ActionInterface::teachActiveCB()
+{
+}
+
+void ActionInterface::teachFeedbackCB(const mission_ctrl_msgs::performTeachingFeedbackConstPtr &feedback)
+{
+
+}
+
+void ActionInterface::genPosFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::generateStudDistributionResultConstPtr &result)
+{
+    switch(state.state_)
+    {
+    case actionlib::SimpleClientGoalState::SUCCEEDED:
+        ie_->genPosDone();
+        break;
+    case actionlib::SimpleClientGoalState::PREEMPTED:
+        ie_->goalCancelled();
+        break;
+    case actionlib::SimpleClientGoalState::ABORTED:
+        ie_->genPosFailed();
+        break;
+    case actionlib::SimpleClientGoalState::LOST:
+        ie_->genPosFailed();
+        break;
+    default:
+        ie_->genPosFailed();
+        break;
+    }
+}
+
+void ActionInterface::genPosActiveCB()
+{
+
+}
+
+void ActionInterface::genPosFeedbackCB(const mission_ctrl_msgs::generateStudDistributionFeedbackConstPtr &feedback)
+{
+
 }

@@ -11,5 +11,13 @@
 #define EXEC_SKIP_STUD "execSkipStud"
 #define EXEC_SKIP_TASK "execSkipTask"
 
+/* INSTRUCTION FUNCTIONS */
+#define INSTR_START "instrStart"
+#define INSTR_ABORT "instrAbort"
+#define INSTR_PAUSE "instrPause"
+
+#define INSTR_RETRY "instrRetry"
+#define INSTR_SKIP_TASK "instrSkipTask"
+
 
 #endif /* FUNCTIONDEFINES_HPP_ */

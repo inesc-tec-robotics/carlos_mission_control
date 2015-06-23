@@ -31,10 +31,12 @@ public:
 
 public:
     static ExecutionEngine* getInstance();
+
+    void init();
+
     std::string getCurrentTask();
     std::vector<std::string> tasks;
     int task_n;
-
 
     //current state:
     ExecState current_state_;
@@ -65,10 +67,6 @@ private:
     static ExecutionEngine* instance_;
 
     std::map<std::string,bool> enabled_functions;
-
-    //action clients:
-    movePlatform_client* platform_client_;
-    executeWeld_client* arm_client_;
 
     //functions NOT offered to the user (only to my friend ActionInterface - he's a well-behaved guy!)
     void maniDone();

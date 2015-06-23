@@ -307,7 +307,7 @@ struct cancel_goals_a
     template <class FSM,class EVT,class SourceState,class TargetState>
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
-        ExecutionEngine::getInstance()->aci_->cancelAllGoals();
+        ExecutionEngine::getInstance()->aci_->cancelExecGoals();
     }
 };
 
@@ -447,9 +447,10 @@ ExecutionEngine* ExecutionEngine::getInstance()
 
 ExecutionEngine::ExecutionEngine()
 {
-    ExecutionEngine::getInstance()->task_n=0;
-    ExecutionEngine::getInstance()->tasks = MissionHandler::getInstance()->getTaskList();
+}
 
+void ExecutionEngine::init()
+{
     aci_ = new ActionInterface();
     aci_->initExecution(this);
 
@@ -506,13 +507,7 @@ void ExecutionEngine::maniActive()
 void ExecutionEngine::maniFeedback()
 {
     //send signal to UIAPI that there is an update:
-    mission_control::Progress progress;
-
-    progress.current_mission = MissionHandler::getInstance()->getLoadedName();
-    progress.current_task = ExecutionEngine::getInstance()->getCurrentTask();
-    //progress.exec_engine_state = esm_->
-
-    UiAPI::getInstance()->execProgressUpdate(progress);
+    sendProgressUpdate();
 }
 
 void ExecutionEngine::navDone()
@@ -542,10 +537,10 @@ void ExecutionEngine::goalCancelled()
 
 string ExecutionEngine::getCurrentTask()
 {
-    if(ExecutionEngine::getInstance()->tasks.size() <= 0)
+    if(tasks.size() <= 0)
         return "none";
 
-    return ExecutionEngine::getInstance()->tasks[ExecutionEngine::getInstance()->task_n];
+    return tasks[task_n];
 }
 
 geometry_msgs::PoseStamped ExecutionEngine::convert2PoseStamped(double x, double y, double yaw)

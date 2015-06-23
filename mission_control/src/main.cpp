@@ -13,6 +13,7 @@
 #include "hw_state_machine.hpp"
 #include "system_engine.hpp"
 #include "execution_engine.hpp"
+#include "instruction_engine.hpp"
 
 
 using namespace std;
@@ -30,7 +31,10 @@ int main(int argc, char * argv[])
     SystemEngine::getInstance();
 
     //start execution engine
-    ExecutionEngine::getInstance();
+    ExecutionEngine::getInstance()->init();
+
+    //start instruction engine
+    InstructionEngine::getInstance()->init();
 
     //launch UI api:
     ROS_INFO("Launching UI API...");

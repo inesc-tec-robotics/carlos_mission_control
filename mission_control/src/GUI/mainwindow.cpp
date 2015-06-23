@@ -323,7 +323,8 @@ void MainWindow::updateMissionMeta()
 void MainWindow::update()
 {
     updateMissionMeta();
-    updateTaskList();
+    if(mh_->isLoaded())
+        updateTaskList();
 
 }
 

@@ -24,6 +24,7 @@
 #include "system_engine.hpp"
 #include "action_interface.hpp"
 #include "UI_API.hpp"
+#include "function_defines.hpp"
 
 
 
@@ -32,10 +33,6 @@ namespace mpl = boost::mpl;
 using namespace msm::front;
 using namespace boost::msm::front::euml;
 using namespace std;
-
-//static task params:
-vector<string> InstructionEngine::tasks;
-int InstructionEngine::task_n;
 
 // Instruction state machine:
 namespace
@@ -77,7 +74,7 @@ struct generate_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        ROS_INFO_STREAM("Stud generation for task " << InstructionEngine::getCurrentTask() << " finished");
+        ROS_INFO_STREAM("Stud generation for task " << InstructionEngine::getInstance()->getCurrentTask() << " finished");
     }
 };
 struct teach_s : public msm::front::state<>
@@ -86,9 +83,18 @@ struct teach_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        ROS_INFO_STREAM("Entered teach state");
+        InstructionEngine::getInstance()->current_state_ = InstructionEngine::NAV;
+        InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                            (INSTR_ABORT)
+                                                            (INSTR_PAUSE) );
 
-        //call prodisp!
+        InstructionEngine::getInstance()->sendProgressUpdate();
+
+        ROS_DEBUG("Instruction engine entered teaching state.");
+        ROS_INFO_STREAM("Teaching task " << InstructionEngine::getInstance()->getCurrentTask() << ".");
+
+        //send goal
+        InstructionEngine::getInstance()->aci_->sendTeachGoal(InstructionEngine::getInstance()->getCurrentTask());
 
     }
 
@@ -184,10 +190,10 @@ struct nav_s : public msm::front::state<>
     void on_entry(Event const& ,FSM&)
     {
         ROS_DEBUG("Instruction engine entered navigation state.");
-        ROS_INFO_STREAM("Navigating to task " << InstructionEngine::getCurrentTask() << ".");
+        ROS_INFO_STREAM("Navigating to task " << InstructionEngine::getInstance()->getCurrentTask() << ".");
 
         //get goal data:
-        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(InstructionEngine::getCurrentTask());
+        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(InstructionEngine::getInstance()->getCurrentTask());
 
         //create goal:
         mission_ctrl_msgs::movePlatformGoal goal;
@@ -200,7 +206,7 @@ struct nav_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        ROS_INFO_STREAM("Navigation to task " << InstructionEngine::getCurrentTask() << " finished.");
+        ROS_INFO_STREAM("Navigation to task " << InstructionEngine::getInstance()->getCurrentTask() << " finished.");
         ROS_DEBUG("Instruction engine exiting navigation state");
     }
 };
@@ -330,7 +336,7 @@ struct task_gen_done_g
     bool operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
     {
         //check if the task has already generated studs (task state will be "instructed")
-        if(MissionHandler::getInstance()->getTaskState(InstructionEngine::getCurrentTask()) == mission::INSTRUCTED)
+        if(MissionHandler::getInstance()->getTaskState(InstructionEngine::getInstance()->getCurrentTask()) == mission::INSTRUCTED)
             return true;
 
         return false;
@@ -437,14 +443,50 @@ InstructionEngine* InstructionEngine::getInstance()
 
 InstructionEngine::InstructionEngine()
 {
-    InstructionEngine::task_n=0;
-    InstructionEngine::tasks = MissionHandler::getInstance()->getTaskList();
+}
 
+void InstructionEngine::init()
+{
     aci_ = new ActionInterface();
     aci_->initInstruction(this);
 
     ism_ = boost::shared_ptr<InstrStateMachine>(new InstructionEngine::InstrStateMachine());
     ism_->start();
+}
+
+void InstructionEngine::teachDone()
+{
+    ism_->process_event(teach_done_e());
+}
+
+void InstructionEngine::teachFailed()
+{
+    ism_->process_event(teach_fail_e());
+}
+
+void InstructionEngine::teachFeedback()
+{
+
+}
+
+void InstructionEngine::genPosDone()
+{
+    ism_->process_event(gen_done_e());
+}
+
+void InstructionEngine::genPosFailed()
+{
+    ism_->process_event(gen_fail_e());
+}
+
+void InstructionEngine::genPosFeedback()
+{
+
+}
+
+void InstructionEngine::goalCancelled()
+{
+     ism_->process_event(cancelled_e());
 }
 
 // start the state machine (first call of on_entry)
@@ -460,10 +502,10 @@ bool InstructionEngine::abort()
 
 string InstructionEngine::getCurrentTask()
 {
-    if(InstructionEngine::tasks.size() <= 0)
+    if(tasks.size() <= 0)
         return "none";
 
-    return InstructionEngine::tasks[InstructionEngine::task_n];
+    return tasks[task_n];
 }
 
 geometry_msgs::PoseStamped InstructionEngine::convert2PoseStamped(double x, double y, double yaw)
@@ -498,6 +540,16 @@ geometry_msgs::PoseStamped InstructionEngine::convert2PoseStamped(double x, doub
     nav_goal.pose.orientation.z = rot_quaternions.z();
 
     return nav_goal;
+}
+
+void InstructionEngine::setEnabledFunctions(std::vector<string> functions)
+{
+
+}
+
+void InstructionEngine::sendProgressUpdate()
+{
+
 }
 
 

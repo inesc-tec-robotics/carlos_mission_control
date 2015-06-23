@@ -35,7 +35,10 @@ public:
 
     void cancelArmGoal();
     void cancelPlatformGoal();
-    void cancelAllGoals();
+    void cancelTeachGoal();
+    void cancelGenPosGoal();
+    void cancelExecGoals();
+    void cancelInstrGoals();
 
 private:
 
@@ -46,6 +49,14 @@ private:
     void armFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::executeWeldResultConstPtr &result);
     void armActiveCB();
     void armFeedbackCB(const mission_ctrl_msgs::executeWeldFeedbackConstPtr &feedback);
+
+    void teachFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::performTeachingResultConstPtr &result);
+    void teachActiveCB();
+    void teachFeedbackCB(const mission_ctrl_msgs::performTeachingFeedbackConstPtr &feedback);
+
+    void genPosFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::generateStudDistributionResultConstPtr &result);
+    void genPosActiveCB();
+    void genPosFeedbackCB(const mission_ctrl_msgs::generateStudDistributionFeedbackConstPtr &feedback);
 
     //pointer to parents:
     ExecutionEngine* ee_;
