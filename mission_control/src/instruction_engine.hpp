@@ -67,7 +67,7 @@ private:
     void teachDone();
     void teachFailed();
     void teachFeedback();
-    void genPosDone();
+    void genPosDone(std::vector<geometry_msgs::Point> stud_positions);
     void genPosFailed();
     void genPosFeedback();
     void goalCancelled();

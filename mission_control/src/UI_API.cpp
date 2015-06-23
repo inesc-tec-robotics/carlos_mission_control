@@ -60,6 +60,11 @@ void UiAPI::execProgressUpdate(mission_control::Progress &progress)
     exec_progress_pub_.publish(progress);
 }
 
+void UiAPI::instrProgressUpdate(mission_control::Progress &progress)
+{
+    instr_progress_pub_.publish(progress);
+}
+
 bool UiAPI::getTaskListCB(mission_control::getTaskList::Request &request, mission_control::getTaskList::Response &response)
 {
     ROS_INFO("getTaskListCB");

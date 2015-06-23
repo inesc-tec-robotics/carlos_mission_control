@@ -52,7 +52,7 @@ struct idle_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-        cout << "Entered idle state" << endl;
+
     }
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
@@ -64,7 +64,7 @@ struct executing_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-        cout << "Entered executing state" << endl;
+        ROS_INFO_STREAM("Execution of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
         ExecutionEngine::getInstance()->start();
         SystemEngine::getInstance()->lockMissionHandler();
 
@@ -74,7 +74,7 @@ struct executing_s : public msm::front::state<>
     void on_exit(Event const&,FSM& )
     {
         SystemEngine::getInstance()->unlockMissionHandler();
-        cout << "Execution terminated" << endl;
+        ROS_INFO_STREAM("Execution of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 struct instructing_s : public msm::front::state<>
@@ -82,12 +82,13 @@ struct instructing_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-        cout << "Entered instructing state" << endl;
+        ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
+        ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 struct assisting_s : public msm::front::state<>
@@ -95,12 +96,13 @@ struct assisting_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-        cout << "Entered assisting state" << endl;
+        ROS_INFO_STREAM("Assisting of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
+        ROS_INFO_STREAM("Assisting of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 
@@ -201,6 +203,8 @@ struct SystemStateMachine_ : public msm::front::state_machine_def<SystemStateMac
             Row < idle_s,               exec_start_e,             executing_s,    none,                       And_<hw_idle_g, mission_executable_g>    >,
             Row < idle_s,               instruct_start_e,         instructing_s,  none,                       And_<hw_idle_g, mission_instructable_g>  >,
             Row < idle_s,               assist_start_e,           assisting_s,    none,                       none                >,
+            Row < idle_s,               exec_done_e,              idle_s,         none,                       none                >,
+            Row < idle_s,               instruct_done_e,          idle_s,         none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < executing_s,          exit_e,             idle_s,         none,                       none                >,
             Row < executing_s,          exec_done_e,        idle_s,         none,                       none                >,
@@ -218,9 +222,8 @@ struct SystemStateMachine_ : public msm::front::state_machine_def<SystemStateMac
     template <class FSM,class Event>
     void no_transition(Event const& e, FSM&,int state)
     {
-        //ROS_ERROR_STREAM("No transition from state " << state << " on event " << typeid(e).name());
+        ROS_ERROR_STREAM("Cannot process event. No allowable transition.");
     }
-
 };
 
 }

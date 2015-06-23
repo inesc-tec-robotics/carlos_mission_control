@@ -41,6 +41,7 @@ public:
     ~UiAPI();
 
     void execProgressUpdate(mission_control::Progress &progress);
+    void instrProgressUpdate(mission_control::Progress &progress);
 
 private:
 
@@ -68,12 +69,6 @@ private:
     static UiAPI* instance_;
 
     ros::NodeHandle n;
-
-//    ExecutionEngine* execution_engine_;
-//    SystemEngine* system_engine_;
-//    MissionHandler* mission_handler;
-
-
 
     //mission management services
     ros::ServiceServer create_new_mission_srv_;

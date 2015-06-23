@@ -357,11 +357,25 @@ vector<string> MissionHandler::getExecutableTasks()
 
     for(int i=0;i<(int)all_tasks.size();i++)
     {
-        if(getTaskState(all_tasks[i]) == mission::INSTRUCTED)
+        if(getTaskState(all_tasks[i]) == mission::INSTRUCTED || getTaskState(all_tasks[i]) == mission::PARTIALLY_COMPLETED)
             executable_tasks.push_back(all_tasks[i]);
     }
 
     return executable_tasks;
+}
+
+vector<string> MissionHandler::getInstructableTasks()
+{
+    vector<string> instructable_tasks;
+    vector<string> all_tasks = getTaskList();
+
+    for(int i=0;i<(int)all_tasks.size();i++)
+    {
+        if(getTaskState(all_tasks[i]) == mission::CONFIGURED)
+            instructable_tasks.push_back(all_tasks[i]);
+    }
+
+    return instructable_tasks;
 }
 
 TaskParams MissionHandler::getTaskParams(string task_name)
@@ -549,6 +563,40 @@ vector<string> MissionHandler::getStudList(string task_name)
     }
 
     return studs;
+}
+
+bool MissionHandler::addStud(string task_name, double x, double y, string stud_name)
+{
+    if(getTaskState(task_name).toUInt() > mission::INSTRUCTED || getTaskState(task_name).toUInt() < mission::CONFIGURED)
+    {
+        ROS_ERROR_STREAM("Failed to add stud to task " << task_name << ". Task either not configured or already (partly) completed");
+        return false;
+    }
+
+    if(stud_name == "auto_generate")
+    {
+        vector<string> studs = getStudList(task_name);
+        int index = 0;
+        for(int i=0;i<(int)studs.size();i++)
+        {
+            string current_index = studs[i].substr(studs[i].find("_")+1);
+            int temp_index = atoi(current_index.c_str());
+            if(temp_index > index)
+                index = temp_index;
+        }
+
+        stringstream ss;
+        ss << "stud_" << index;
+        stud_name = ss.str();
+    }
+
+    string key = "mission/tasks/" + task_name + "/studs/" + stud_name + "/";
+    ros::param::set((key + "state"), (int)stud::PENDING);
+    ros::param::set((key + "x"), x);
+    ros::param::set((key + "y"), y);
+    ros::param::set((key + "time_stamp"), (double)ros::Time::now().toSec());
+
+    return true;
 }
 
 bool MissionHandler::setStudState(string task_name, string stud_name, stud::states state)

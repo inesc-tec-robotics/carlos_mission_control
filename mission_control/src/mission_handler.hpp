@@ -164,6 +164,7 @@ public:
     std::vector<std::string> getTaskList();
 
     std::vector<std::string> getExecutableTasks();
+    std::vector<std::string> getInstructableTasks();
 
     TaskParams getTaskParams(std::string task_name);
     TaskParams getTaskParams(int index);
@@ -173,6 +174,7 @@ public:
 
     std::vector<std::string> getStudList(std::string task_name);
 
+    bool addStud(std::string task_name, double x, double y, std::string stud_name = "auto_generate");
     bool setStudState(std::string task_name, std::string stud_name, stud::states state);
 
     bool updateMissionState();

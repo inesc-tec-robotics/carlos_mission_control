@@ -119,6 +119,7 @@ void ActionInterface::cancelInstrGoals()
 {
     cancelGenPosGoal();
     cancelTeachGoal();
+    cancelPlatformGoal();
 }
 
 void ActionInterface::cancelExecGoals()
@@ -232,7 +233,7 @@ void ActionInterface::genPosFinishedCB(const actionlib::SimpleClientGoalState &s
     switch(state.state_)
     {
     case actionlib::SimpleClientGoalState::SUCCEEDED:
-        ie_->genPosDone();
+        ie_->genPosDone(result->positions);
         break;
     case actionlib::SimpleClientGoalState::PREEMPTED:
         ie_->goalCancelled();

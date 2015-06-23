@@ -51,7 +51,12 @@ struct skip_task_e{};
 struct nav_done_e {};
 struct mani_done_e {};
 struct nav_fail_e {};
-struct weld_fail_e {};
+struct weld_fail_e
+{
+    weld_fail_e() : stud_name_("none"){}
+    weld_fail_e(string stud_name) : stud_name_(stud_name){}
+    string stud_name_;
+};
 struct task_error_e {}; //event for other task errors than welding failed
 struct hw_fail_e {};
 struct goal_cancelled_e{};
@@ -86,17 +91,21 @@ struct nav_error_s : public msm::front::state<>
                                                             (EXEC_SKIP_TASK) );
         ExecutionEngine::getInstance()->sendProgressUpdate();
 
-        cout << "error in navigation - call operator" << endl;
+        ROS_DEBUG("Execution engine entering navigation error state");
+        ROS_INFO_STREAM("Navigation error in task " << ExecutionEngine::getInstance()->getCurrentTask());
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        cout << "operator has now confirmed!" << endl;
+        ROS_DEBUG("Execution engine leaving navigation error state");
+        ROS_INFO("Navigation error resolved");
     }
 };
 struct weld_error_s : public msm::front::state<>
 {
+    string failed_stud_name_;
+
     typedef mpl::vector4<skipStudPossible_f,
     skipTaskPossible_f,
     retryPossible_f,
@@ -114,13 +123,17 @@ struct weld_error_s : public msm::front::state<>
                                                             (EXEC_SKIP_STUD) );
         ExecutionEngine::getInstance()->sendProgressUpdate();
 
-        cout << "error in manipulation - call operator" << endl;
+        failed_stud_name_ = event.stud_name_;
+
+        ROS_DEBUG("Execution engine entering weld error state");
+        ROS_INFO_STREAM("Welding error in task " << ExecutionEngine::getInstance()->getCurrentTask() << " for stud " << failed_stud_name_);
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        cout << "operator has now confirmed!" << endl;
+        ROS_DEBUG("Execution engine leaving weld error state");
+        ROS_INFO("Welding error resolved");
     }
 };
 struct hw_error_s : public msm::front::state<>
@@ -136,13 +149,15 @@ struct hw_error_s : public msm::front::state<>
                                                             (EXEC_RETRY) );
         ExecutionEngine::getInstance()->sendProgressUpdate();
 
-        cout << "hardware error - call operator" << endl;
+        ROS_DEBUG("Execution engine entering hardware error state");
+        ROS_INFO("Hardware error - call operator");
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        cout << "operator has now confirmed!" << endl;
+        ROS_INFO("Hardware error solved");
+        ROS_DEBUG("Execution engine leaving hardware error state");
     }
 };
 struct nav_s : public msm::front::state<>
@@ -175,7 +190,7 @@ struct nav_s : public msm::front::state<>
     void on_exit(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Navigation to task " << ExecutionEngine::getInstance()->getCurrentTask() << " finished.");
-        ROS_DEBUG("Execution engine exiting navigation state");
+        ROS_DEBUG("Execution engine leaving navigation state");
     }
 };
 struct mani_s : public msm::front::state<>
@@ -201,7 +216,7 @@ struct mani_s : public msm::front::state<>
     void on_exit(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Welding of task " << ExecutionEngine::getInstance()->getCurrentTask() << " finished.");
-        ROS_DEBUG("Execution engine exiting manipulation state.");
+        ROS_DEBUG("Execution engine leaving manipulation state.");
     }
 };
 struct wait_cancel_s : public msm::front::state<>
@@ -214,8 +229,14 @@ struct wait_cancel_s : public msm::front::state<>
         ExecutionEngine::getInstance()->setEnabledFunctions(temp);
         ExecutionEngine::getInstance()->sendProgressUpdate();
 
-
+        ROS_DEBUG("Execution engine entering wait for cancel state");
         ROS_INFO("Execution engine waiting for goal cancel.");
+    }
+    template <class Event,class FSM>
+    void on_exit(Event const&,FSM& )
+    {
+        ROS_INFO("Goal cancelled");
+        ROS_DEBUG("Execution engine leaving wait for cancelled state");
     }
 };
 struct stopped_s : public msm::front::state<>
@@ -235,11 +256,14 @@ struct stopped_s : public msm::front::state<>
         //Send signal to system engine
         SystemEngine::getInstance()->executeDone();
 
+        ROS_DEBUG("Execution engine entering stopped state");
         ROS_INFO("Execution engine now stopped.");
     }
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
+        ROS_INFO("Execution engine started");
+        ROS_DEBUG("Execution engine leaving stopped state");
     }
 };
 
@@ -258,7 +282,7 @@ struct increment_task_a
         ExecutionEngine::getInstance()->task_n++;
     }
 };
-struct set_remaining_studs_a
+struct set_remaining_studs_a //not sure we will do this anymore
 {
     template <class FSM,class EVT,class SourceState,class TargetState>
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
@@ -269,17 +293,10 @@ struct set_remaining_studs_a
 struct reset_stud_a
 {
     template <class FSM,class EVT,class SourceState,class TargetState>
-    void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
+    void operator()(EVT const& ,FSM& fsm,SourceState& src,TargetState& )
     {
         //resetting stud to "pending"
-    }
-};
-struct reset_task_counter_a
-{
-    template <class FSM,class EVT,class SourceState,class TargetState>
-    void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
-    {
-        ExecutionEngine::getInstance()->task_n = 0;
+        MissionHandler::getInstance()->setStudState(ExecutionEngine::getInstance()->getCurrentTask(), src.failed_stud_name_,stud::PENDING);
     }
 };
 struct send_execute_done_a //not used currently
@@ -397,8 +414,8 @@ struct ExecutionStateMachine_ : public msm::front::state_machine_def<ExecutionSt
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < weld_error_s,         retry_e,            mani_s,         reset_stud_a,               hw_idle_g           >,
             Row < weld_error_s,         skip_stud_e,        mani_s,         none,                       hw_idle_g           >,
-            Row < weld_error_s,         skip_task_e,        stopped_s,      set_remaining_studs_a,      Not_<more_tasks_g>  >,
-            Row < weld_error_s,         skip_task_e,        nav_s,          ActionSequence_< mpl::vector<set_remaining_studs_a, increment_task_a> >,     more_tasks_g  >, //jump to next task is more exists
+            Row < weld_error_s,         skip_task_e,        stopped_s,      none,                       Not_<more_tasks_g>  >,
+            Row < weld_error_s,         skip_task_e,        nav_s,          increment_task_a,           more_tasks_g        >, //jump to next task is more exists
             Row < weld_error_s,         abort_e,            stopped_s,      none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < nav_error_s,          retry_e,            nav_s,          none,                       hw_idle_g           >,
@@ -409,25 +426,16 @@ struct ExecutionStateMachine_ : public msm::front::state_machine_def<ExecutionSt
             Row < wait_cancel_s,        goal_cancelled_e,   stopped_s,      none,                       none                >
             > {};
 
-    /* CS notes!!
-     * Transition tables are evaluated from bottom to top!!
-     */
-
     // Replaces the default no-transition response.
     template <class FSM,class Event>
     void no_transition(Event const& e, FSM&,int state)
     {
-        ROS_ERROR_STREAM("No transition from state " << state << " on event " << typeid(e).name());
+        ROS_ERROR_STREAM("Cannot process event. No allowable transition.");
     }
 
 };
-// Pick a back-end
-//typedef msm::back::state_machine<mode_machine_> ModeMachine;
-
 }
 
-// just inherit from back-end and this structure can be forward-declared in the header file
-// for shorter compile-time
 struct ExecutionEngine::ExecStateMachine : public msm::back::state_machine<ExecutionStateMachine_>
 {
     ExecStateMachine() : msm::back::state_machine<ExecutionStateMachine_>()
