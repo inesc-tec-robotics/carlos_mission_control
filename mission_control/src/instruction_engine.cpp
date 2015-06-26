@@ -24,7 +24,7 @@
 #include "system_engine.hpp"
 #include "action_interface.hpp"
 #include "UI_API.hpp"
-#include "function_defines.hpp"
+#include "mission_control/function_defines.h"
 
 
 
@@ -43,6 +43,7 @@ namespace
 
 //user events
 struct start_e {};
+struct pause_e {};
 struct abort_e {};
 struct retry_e{};
 struct skip_task_e{};
@@ -67,7 +68,7 @@ struct generate_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::GEN_POS;
+        InstructionEngine::getInstance()->current_state_ = InstrState::GEN_POS;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of(INSTR_ABORT) );
 
         InstructionEngine::getInstance()->sendProgressUpdate();
@@ -91,7 +92,7 @@ struct teach_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::TEACH;
+        InstructionEngine::getInstance()->current_state_ = InstrState::TEACH;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                               (INSTR_ABORT) );
 
@@ -117,6 +118,13 @@ struct nav_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& ,FSM&)
     {
+        InstructionEngine::getInstance()->current_state_ = InstrState::NAV;
+        InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
+                                                              (INSTR_ABORT)
+                                                              (EXEC_PAUSE) );
+
+        InstructionEngine::getInstance()->sendProgressUpdate();
+
         ROS_DEBUG("Instruction engine entered navigation state.");
         ROS_INFO_STREAM("Navigating to task " << InstructionEngine::getInstance()->getCurrentTask() << ".");
 
@@ -144,7 +152,7 @@ struct wait_cancel_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::WAIT_CANCEL;
+        InstructionEngine::getInstance()->current_state_ = InstrState::WAIT_CANCEL;
         vector<string> temp;
         InstructionEngine::getInstance()->setEnabledFunctions(temp);
         InstructionEngine::getInstance()->sendProgressUpdate();
@@ -165,9 +173,9 @@ struct stopped_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::STOPPED;
+        InstructionEngine::getInstance()->current_state_ = InstrState::STOPPED;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (INSTR_START) );
-        InstructionEngine::getInstance()->sendProgressUpdate();
+        InstructionEngine::getInstance()->sendProgressUpdate("Instruction stopped and ready");
 
         //update mission state:
         if(MissionHandler::getInstance()->isLoaded())
@@ -192,7 +200,7 @@ struct hw_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::HW_ERROR;
+        InstructionEngine::getInstance()->current_state_ = InstrState::HW_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                               (INSTR_ABORT)
                                                               (INSTR_RETRY) );
@@ -215,7 +223,7 @@ struct gen_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::GEN_POS_ERROR;
+        InstructionEngine::getInstance()->current_state_ = InstrState::GEN_POS_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                               (INSTR_ABORT)
                                                               (INSTR_RETRY)
@@ -239,7 +247,7 @@ struct teach_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::TEACH_ERROR;
+        InstructionEngine::getInstance()->current_state_ = InstrState::TEACH_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                               (INSTR_ABORT)
                                                               (INSTR_RETRY)
@@ -263,7 +271,7 @@ struct nav_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        InstructionEngine::getInstance()->current_state_ = InstructionEngine::NAV_ERROR;
+        InstructionEngine::getInstance()->current_state_ = InstrState::NAV_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                               (INSTR_ABORT)
                                                               (INSTR_RETRY)
@@ -462,8 +470,10 @@ InstructionEngine* InstructionEngine::instance_ = NULL;
 InstructionEngine* InstructionEngine::getInstance()
 {
     if (!instance_)   // Only allow one instance of class to be generated.
+    {
         instance_ = new InstructionEngine();
-
+        instance_->init();
+    }
     return instance_;
 }
 
@@ -526,15 +536,35 @@ void InstructionEngine::goalCancelled()
     ism_->process_event(cancelled_e());
 }
 
+void InstructionEngine::hardwareError()
+{
+    ism_->process_event(hw_fail_e());
+}
+
 // start the state machine (first call of on_entry)
 bool InstructionEngine::start()
 {
     return (ism_->process_event(start_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
+bool InstructionEngine::pause()
+{
+    return (ism_->process_event(pause_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
 bool InstructionEngine::abort()
 {
     return (ism_->process_event(abort_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
+bool InstructionEngine::skipTask()
+{
+    return (ism_->process_event(skip_task_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
+bool InstructionEngine::retry()
+{
+    return (ism_->process_event(retry_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
 string InstructionEngine::getCurrentTask()
@@ -593,12 +623,17 @@ void InstructionEngine::setEnabledFunctions(std::vector<string> functions)
     }
 }
 
-void InstructionEngine::sendProgressUpdate()
+void InstructionEngine::sendProgressUpdate(string description)
 {
     mission_control::Progress progress;
-    progress.engine_state = (unsigned int)current_state_;
+    progress.engine_state = (string)current_state_;
     progress.current_mission = MissionHandler::getInstance()->getLoadedName();
     progress.current_task = getCurrentTask();
+
+    if(description == "")   //no description added:
+        description = progress.engine_state + " - " + progress.current_task;
+
+    progress.description = description;
 
     for(map<string,bool>::iterator itr=enabled_functions.begin();itr!=enabled_functions.end();itr++)
     {

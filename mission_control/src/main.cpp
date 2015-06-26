@@ -31,10 +31,10 @@ int main(int argc, char * argv[])
     SystemEngine::getInstance();
 
     //start execution engine
-    ExecutionEngine::getInstance()->init();
+    ExecutionEngine::getInstance();
 
     //start instruction engine
-    InstructionEngine::getInstance()->init();
+    InstructionEngine::getInstance();
 
     //launch UI api:
     ROS_INFO("Launching UI API...");

@@ -110,6 +110,7 @@ catkin_package(
 ## Declare a cpp executable
  add_executable(arm_emulator src/arm_emulator.cpp)
  add_executable(platform_emulator src/platform_emulator.cpp)
+ add_executable(prodisp_emulator src/prodisp_emulator.cpp)
  add_executable(ui_emulator src/ui_emulator.cpp)
 
 
@@ -117,6 +118,7 @@ catkin_package(
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(arm_emulator mission_ctrl_msgs_generate_messages_cpp)
 add_dependencies(platform_emulator mission_ctrl_msgs_generate_messages_cpp)
+add_dependencies(prodisp_emulator mission_ctrl_msgs_generate_messages_cpp)
 add_dependencies(ui_emulator mission_ctrl_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
@@ -126,6 +128,11 @@ add_dependencies(ui_emulator mission_ctrl_msgs_generate_messages_cpp)
  )
 
  target_link_libraries(platform_emulator
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+ )
+
+ target_link_libraries(prodisp_emulator
    ${catkin_LIBRARIES}
    ${Boost_LIBRARIES}
  )

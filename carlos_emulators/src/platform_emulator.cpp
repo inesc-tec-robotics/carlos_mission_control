@@ -17,14 +17,14 @@
 using namespace std;
 
 //declare action server:
-actionlib::SimpleActionServer<mission_ctrl_msgs::movePlatformAction>* as_;
+actionlib::SimpleActionServer<mission_ctrl_msgs::movePlatformAction>* move_server_;
 
 //publisher
 ros::Publisher state_publisher_;
 
 hardware::states state_;
 
-void actionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
+void moveActionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
 {
     state_ = hardware::BUSY;
 
@@ -53,7 +53,7 @@ void actionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
         if(input == "0")
         {
             result.result_state = true;
-            as_->setSucceeded(result);
+            move_server_->setSucceeded(result);
             state_ = hardware::IDLE;
             return;
         }
@@ -61,7 +61,7 @@ void actionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
         {
             result.result_state = false;
             result.error_string = "welding task failed";
-            as_->setAborted(result);
+            move_server_->setAborted(result);
             state_ = hardware::IDLE;
             return;
         }
@@ -69,7 +69,7 @@ void actionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
         {
             result.result_state = false;
             result.error_string = "hardware error";
-            as_->setAborted(result);
+            move_server_->setAborted(result);
             state_ = hardware::ERROR;
             return;
         }
@@ -99,8 +99,8 @@ int main(int argc, char * argv[])
 
     cout << "starting action server..." << endl;
 
-    as_ = new actionlib::SimpleActionServer<mission_ctrl_msgs::movePlatformAction>(n, CARLOS_MOVE_ACTION, boost::bind(&actionCB, _1), false);
-    as_->start();
+    move_server_ = new actionlib::SimpleActionServer<mission_ctrl_msgs::movePlatformAction>(n, CARLOS_MOVE_ACTION, boost::bind(&moveActionCB, _1), false);
+    move_server_->start();
 
     cout << "action server started. Ready to cruise 'round some ships" << endl;
 

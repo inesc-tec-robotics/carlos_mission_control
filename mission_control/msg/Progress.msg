@@ -1,5 +1,5 @@
 string current_mission
 string current_task
-uint8 engine_state
+string engine_state
 string description
 mission_control/Function[] enabled_functions

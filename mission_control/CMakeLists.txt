@@ -110,8 +110,6 @@ add_service_files(
    getMissionMetaData.srv
    createNewMission.srv
    execStart.srv
-   execAbort.srv
-   execPause.srv
    Trigger.srv
  )
 

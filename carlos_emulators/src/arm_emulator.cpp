@@ -12,25 +12,68 @@
 #include "mission_ctrl_msgs/mission_ctrl_defines.h"
 #include "mission_ctrl_msgs/hardware_state.h"
 #include "mission_ctrl_msgs/executeWeldAction.h"
+#include "mission_ctrl_msgs/generateStudDistributionAction.h"
+
+#define WALL_HEIGHT 2.5
+#define WALL_WIDTH 0.7
 
 using namespace std;
 
 //declare action server:
-actionlib::SimpleActionServer<mission_ctrl_msgs::executeWeldAction>* as_;
+actionlib::SimpleActionServer<mission_ctrl_msgs::executeWeldAction>* weld_server_;
+actionlib::SimpleActionServer<mission_ctrl_msgs::generateStudDistributionAction>* gen_pos_server_;
 
 //publisher
 ros::Publisher state_publisher_;
 
 hardware::states state_;
 
-void actionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
+vector<geometry_msgs::Point> genStudPositions(string task_name)
+{
+    vector<geometry_msgs::Point> stud_positions;
+
+    //here the real arm controller would check the distribution params on the param server
+    // and "pose estimate" the wall section according to the task name.
+    // From these, it would create the stud positions.
+    // We just generate a set of evenly distributed positions within the size of the wall!
+
+    //pseudo distribution params:
+    double stud_distance = 0.1;
+    double proximity = 0.15;
+
+    double x = proximity;
+    double y = proximity;
+
+    while(y < (WALL_HEIGHT - proximity)) // fill vertically
+    {
+
+        while(x < (WALL_WIDTH - proximity)) // fill horizontally
+        {
+            //add stud:
+            geometry_msgs::Point stud;
+            stud.x = x;
+            stud.y = y;
+            stud.z = 0;
+            stud_positions.push_back(stud);
+
+            //update position
+            x = x + stud_distance;
+        }
+
+        y = y + stud_distance;
+    }
+
+    return stud_positions;
+}
+
+void weldActionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
 {
 
     state_ = hardware::BUSY;
 
     mission_ctrl_msgs::executeWeldResult result;
 
-    ROS_INFO_STREAM("Received a goal - execute task: " << goal->task_name);
+    ROS_INFO_STREAM("Received a weld task goal - task: " << goal->task_name);
 
     cout << "Please select outcome: " << endl;
 
@@ -48,7 +91,7 @@ void actionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
         if(input == "0")
         {
             result.result_state = true;
-            as_->setSucceeded(result);
+            weld_server_->setSucceeded(result);
             state_ = hardware::IDLE;
             return;
         }
@@ -56,7 +99,7 @@ void actionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
         {
             result.result_state = false;
             result.error_string = "welding task failed";
-            as_->setAborted(result);
+            weld_server_->setAborted(result);
             state_ = hardware::IDLE;
             return;
         }
@@ -64,7 +107,66 @@ void actionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
         {
             result.result_state = false;
             result.error_string = "hardware error";
-            as_->setAborted(result);
+            weld_server_->setAborted(result);
+            state_ = hardware::ERROR;
+            return;
+        }
+        else
+        {
+            cout << "invalid choice, try again..." << endl;
+        }
+
+    }
+}
+
+void genStudActionCB(const mission_ctrl_msgs::generateStudDistributionGoalConstPtr& goal)
+{
+    state_ = hardware::BUSY;
+
+    mission_ctrl_msgs::generateStudDistributionResult result;
+
+    ROS_INFO_STREAM("Received a generate stud distribution goal - task: " << goal->task_name);
+
+    if(!ros::param::has(("mission/tasks/" + goal->task_name)))
+    {
+        result.error_string = "task doesn't exist";
+        gen_pos_server_->setAborted(result);
+        state_ = hardware::IDLE;
+        return;
+    }
+
+
+    cout << "Please select outcome: " << endl;
+
+    while(true)
+    {
+        string input;
+        cout << "-----------Menu-----------" << endl;
+        cout << "0      success" << endl;
+        cout << "1      task failed" << endl;
+        cout << "2      hw error"<< endl;
+        cout << endl;
+        cout << "choice: ";
+        cin >> input;
+
+        if(input == "0")
+        {
+            result.positions = genStudPositions(goal->task_name);
+            gen_pos_server_->setSucceeded(result);
+            state_ = hardware::IDLE;
+            return;
+        }
+        else if(input == "1")
+        {
+            result.error_string = "failed to generate stud positions";
+            gen_pos_server_->setAborted(result);
+            state_ = hardware::IDLE;
+            return;
+        }
+        else if(input == "2")
+        {
+            result.error_string = "hardware error";
+            gen_pos_server_->setAborted(result);
             state_ = hardware::ERROR;
             return;
         }
@@ -94,8 +196,11 @@ int main(int argc, char * argv[])
 
     cout << "starting action server..." << endl;
 
-    as_ = new actionlib::SimpleActionServer<mission_ctrl_msgs::executeWeldAction>(n, CARLOS_WELD_ACTION, boost::bind(&actionCB, _1), false);
-    as_->start();
+    weld_server_ = new actionlib::SimpleActionServer<mission_ctrl_msgs::executeWeldAction>(n, CARLOS_WELD_ACTION, boost::bind(&weldActionCB, _1), false);
+    weld_server_->start();
+
+    gen_pos_server_ = new actionlib::SimpleActionServer<mission_ctrl_msgs::generateStudDistributionAction>(n, CARLOS_DISTRIBUTION_ACTION, boost::bind(&genStudActionCB, _1), false);
+    gen_pos_server_->start();
 
     cout << "action server started. Ready to build some ships" << endl;
 

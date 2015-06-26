@@ -62,6 +62,13 @@ private:
     bool execSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool execRetryCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
 
+    bool instrStartCB(mission_control::execStart::Request &request, mission_control::execStart::Response &response);
+    bool instrAbortCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool instrPauseCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool instrSkipStudCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool instrSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool instrRetryCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+
 
     void statePubTimeout(const ros::TimerEvent &event);
 
@@ -88,6 +95,13 @@ private:
     ros::ServiceServer exec_skip_stud_srv_;
     ros::ServiceServer exec_skip_task_srv_;
     ros::ServiceServer exec_retry_srv_;
+
+    //instruction control services
+    ros::ServiceServer instr_start_srv_;
+    ros::ServiceServer instr_abort_srv_;
+    ros::ServiceServer instr_pause_srv_;
+    ros::ServiceServer instr_skip_task_srv_;
+    ros::ServiceServer instr_retry_srv_;
 
 
     ros::Publisher state_pub_;

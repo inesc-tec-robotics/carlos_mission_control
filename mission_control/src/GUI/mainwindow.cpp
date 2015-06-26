@@ -45,6 +45,11 @@
 #include "loadMission.hpp"
 #include <iostream>
 #include <QItemSelectionModel>
+#include "ros/service_client.h"
+#include "mission_control/execStart.h"
+#include "mission_control/Trigger.h"
+#include "mission_control/function_defines.h"
+#include "mission_control/ui_api_defines.h"
 
 
 using namespace std;
@@ -58,19 +63,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     setWindowTitle(tr("CARLOS Mission Controller"));
 
-    //setWindowIcon(QIcon(QString::fromStdString(pic)));
-    //QWidget::showMaximized();
-
     initUI();
 
-    //TIMER: Could be used to update data from param:
-    //    QTimer *timer = new QTimer(this);
-    //    timer->setInterval(1000);
-    //    connect(timer, SIGNAL(timeout()), this, SLOT(updateDeviceList()));
-    //    timer->start();
+    //initialize ros rubscribers
+    hw_state_sub = n.subscribe(UIAPI_HW_STATES, 10, &MainWindow::hwStateCB, this);
+    exec_progress_sub = n.subscribe(UIAPI_EXEC_PROGRESS, 10, &MainWindow::execProgressCB, this);
+    instr_progress_sub = n.subscribe(UIAPI_INSTR_PROGRESS, 10, &MainWindow::instrProgressCB, this);
 
-    hideTaskParams();
-    update();
+    updateInfo();
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +82,11 @@ void MainWindow::initUI()
 {
     task_list_model = new QStandardItemModel();
     ui->taskList->setModel(task_list_model);
+    connect(ui->taskList->selectionModel(),
+            SIGNAL(currentChanged(QModelIndex,QModelIndex)),
+            this,
+            SLOT(on_taskList_selection_changed(QModelIndex, QModelIndex)) );
+
 
     //connect signal/slot for menubar
     connect(ui->closeButton,SIGNAL(clicked()),this,SLOT(close()));
@@ -91,13 +96,33 @@ void MainWindow::initUI()
     connect(ui->actionSave, SIGNAL(triggered()),this, SLOT(save()));
     connect(ui->actionSave_As, SIGNAL(triggered()),this, SLOT(saveAs()));
 
-    connect(ui->taskList->selectionModel(),
-            SIGNAL(currentChanged(QModelIndex,QModelIndex)),
-            this,
-            SLOT(on_taskList_selection_changed(QModelIndex,QModelIndex)) );
-
-
     //ui->task_params_layout->addRow(QString("Tast"), new QLabel("hej med test"));
+
+    //init tab widget:
+    ui->tabWidget->setCurrentIndex(0); //always start at "info" tab
+
+    //init the tabs:
+    initInfoTab();
+    initExecuteTab();
+    initInstructTab();
+
+}
+
+void MainWindow::initExecuteTab()
+{
+    ui->exec_status_label->hide();
+    ui->exec_descrp_label->hide();
+}
+
+void MainWindow::initInstructTab()
+{
+    ui->instr_status_label->hide();
+    ui->instr_descrp_label->hide();
+}
+
+void MainWindow::initInfoTab()
+{
+    hideTaskParams();
 }
 
 void MainWindow::createNew()
@@ -191,7 +216,7 @@ void MainWindow::load()
     }
 
     //fill the task list;
-    update();
+    updateInfo();
 
 }
 
@@ -277,6 +302,7 @@ void MainWindow::on_taskList_selection_changed(const QModelIndex &index, const Q
     ui->stud_proximity_label->setText(QString::number(params.stud_pattern.proximity));
     ui->nav_goal_label->setText(QString::fromStdString( params.navigation_goal.toString(true) ));
     ui->number_of_studs_label->setText(QString::number(params.studs.size()));
+    ui->task_state->setText(QString::fromStdString(params.state.toString()));
 
     showTaskParams();
 }
@@ -299,10 +325,10 @@ void MainWindow::updateTaskList()
     //    else
     //        showTaskParams();
 
-        if(ui->taskList->selectionModel()->selectedIndexes().size() < 1)
-            hideTaskParams();
-        else
-            showTaskParams();
+    if(ui->taskList->selectionModel()->selectedIndexes().size() < 1)
+        hideTaskParams();
+    else
+        showTaskParams();
 }
 
 void MainWindow::updateMissionMeta()
@@ -318,9 +344,10 @@ void MainWindow::updateMissionMeta()
     MissionParams params = mh_->getMissionParams();
     ui->mission_name->setText(QString::fromStdString(params.name));
     ui->cad_ref->setText(QString::fromStdString(params.CAD_ref));
+    ui->mission_state->setText(QString::fromStdString(params.state.toString()));
 }
 
-void MainWindow::update()
+void MainWindow::updateInfo()
 {
     updateMissionMeta();
     if(mh_->isLoaded())
@@ -337,6 +364,7 @@ void MainWindow::hideTaskParams()
     ui->stud_type_label->hide();
     ui->nav_goal_label->hide();
     ui->number_of_studs_label->hide();
+    ui->task_state->hide();
 }
 
 void MainWindow::showTaskParams()
@@ -348,6 +376,266 @@ void MainWindow::showTaskParams()
     ui->stud_type_label->show();
     ui->nav_goal_label->show();
     ui->number_of_studs_label->show();
+    ui->task_state->show();
+}
+
+void MainWindow::hwStateCB(const mission_control::HardwareStates::ConstPtr &msg)
+{
+    //update state labels in bottom of window
+    ui->robot_state_label->setText(QString::fromStdString(msg->hardware_states[0].device_state));
+    ui->platform_state_label->setText(QString::fromStdString(msg->hardware_states[1].device_state));
+    ui->arm_state_label->setText(QString::fromStdString(msg->hardware_states[2].device_state));
+    ui->system_state_label->setText(QString::fromStdString(msg->hardware_states[3].device_state));
+}
+
+void MainWindow::execProgressCB(const mission_control::Progress::ConstPtr &msg)
+{
+    //unhide the execution status and description labels:
+    ui->exec_status_label->show();
+    ui->exec_descrp_label->show();
+
+    //update the exection status and description:
+    ui->exec_status_label->setText(QString::fromStdString(msg->engine_state));
+    ui->exec_descrp_label->setText(QString::fromStdString(msg->description));
+    ui->mission_name->setText(QString::fromStdString(msg->current_mission));
+
+    //update the task list (color the current task)
+    for(int i=0;i<task_list_model->rowCount();i++)
+    {
+        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString().toStdString() == msg->current_task)
+            task_list_model->setData(task_list_model->index(i,0),Qt::red,Qt::ForegroundRole);
+        else
+            task_list_model->setData(task_list_model->index(i,0),Qt::black,Qt::ForegroundRole);
+    }
+
+    //update the enabled buttons:
+    //start:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_START)
+        {
+            ui->execStartButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //pause:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_PAUSE)
+        {
+            ui->execPauseButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //abort:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_ABORT)
+        {
+            ui->execStopButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //retry:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_RETRY)
+        {
+            ui->execRetryButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //skipStud:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_SKIP_STUD)
+        {
+            ui->execSkipStudButton->setEnabled(msg->enabled_functions[i].enabled);
+        }
+    }
+
+    //skipTask:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_SKIP_TASK)
+        {
+            ui->execSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
+        }
+    }
+
+}
+
+void MainWindow::instrProgressCB(const mission_control::Progress::ConstPtr &msg)
+{
+    //unhide the execution status and description labels:
+    ui->instr_status_label->show();
+    ui->instr_descrp_label->show();
+
+    //update the exection status and description:
+    ui->instr_status_label->setText(QString::fromStdString(msg->engine_state));
+    ui->instr_descrp_label->setText(QString::fromStdString(msg->description));
+    ui->mission_name->setText(QString::fromStdString(msg->current_mission));
+
+    //update the task list (color the current task)
+    for(int i=0;i<task_list_model->rowCount();i++)
+    {
+        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString().toStdString() == msg->current_task)
+            task_list_model->setData(task_list_model->index(i,0),Qt::red,Qt::ForegroundRole);
+        else
+            task_list_model->setData(task_list_model->index(i,0),Qt::black,Qt::ForegroundRole);
+    }
+
+    //update the enabled buttons:
+    //start:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_START)
+        {
+            ui->instrStartButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //pause:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_PAUSE)
+        {
+            ui->instrPauseButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //abort:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_ABORT)
+        {
+            ui->instrStopButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //retry:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_RETRY)
+        {
+            ui->instrRetryButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //skipTask:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_SKIP_TASK)
+        {
+            ui->instrSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
+        }
+    }
+
 }
 
 
+void MainWindow::on_execStartButton_clicked()
+{
+    mission_control::execStart srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::execStart>(UIAPI_EXEC_START);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execPauseButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_PAUSE_RESUME);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execStopButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_ABORT);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execRetryButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_RETRY);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execSkipTaskButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_SKIP_TASK);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execSkipStudButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_SKIP_STUD);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+
+void MainWindow::on_instrStartButton_clicked()
+{
+    mission_control::execStart srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::execStart>(UIAPI_EXEC_START);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_instrPauseButton_clicked()
+{
+
+}
+
+void MainWindow::on_instrStopButton_clicked()
+{
+
+}
+
+void MainWindow::on_instrRetryButton_clicked()
+{
+
+}
+
+void MainWindow::on_instrSkipTaskButton_clicked()
+{
+
+}

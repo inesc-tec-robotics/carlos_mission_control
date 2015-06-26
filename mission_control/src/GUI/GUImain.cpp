@@ -63,20 +63,15 @@ GUImain::~GUImain()
 {
     GUIthread.interrupt();
     GUIthread.join();
-
 }
 
 void GUImain::runGUIthread(int argc, char *argv[])
 {
     try
     {
-
         QApplication a(argc, argv);
-
         MainWindow w;
-
         w.show();
-
         a.exec();
     }
     catch (std::exception)

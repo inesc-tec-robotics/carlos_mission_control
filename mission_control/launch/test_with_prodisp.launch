@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node name="arm_emulator" pkg="carlos_emulators" type="arm_emulator" output="screen" respawn="true" />
+  
+  <node name="platform_emulator" pkg="carlos_emulators" type="platform_emulator" output="screen" respawn="true" />
+    
+  <node name="mission_controller" pkg="mission_control" type="mission_controller" output="screen" respawn="false" args="gui" required="true" />
+  
+</launch>

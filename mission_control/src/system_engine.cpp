@@ -16,6 +16,7 @@
 #include "mission_handler.hpp"
 #include "hw_state_machine.hpp"
 #include "execution_engine.hpp"
+#include "instruction_engine.hpp"
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
@@ -52,7 +53,7 @@ struct idle_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-
+        SystemEngine::getInstance()->current_state_ = SysState::IDLE;
     }
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
@@ -65,9 +66,9 @@ struct executing_s : public msm::front::state<>
     void on_entry(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Execution of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
-        ExecutionEngine::getInstance()->start();
+        SystemEngine::getInstance()->current_state_ = SysState::EXECUTING;
         SystemEngine::getInstance()->lockMissionHandler();
-
+        ExecutionEngine::getInstance()->start();
     }
 
     template <class Event,class FSM>
@@ -83,11 +84,15 @@ struct instructing_s : public msm::front::state<>
     void on_entry(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
+        SystemEngine::getInstance()->current_state_ = SysState::INSTRUCTING;
+        SystemEngine::getInstance()->lockMissionHandler();
+        InstructionEngine::getInstance()->start();
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
+        SystemEngine::getInstance()->unlockMissionHandler();
         ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
@@ -97,6 +102,7 @@ struct assisting_s : public msm::front::state<>
     void on_entry(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Assisting of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
+        SystemEngine::getInstance()->current_state_ = SysState::ASSISTING;
     }
 
     template <class Event,class FSM>
@@ -202,7 +208,7 @@ struct SystemStateMachine_ : public msm::front::state_machine_def<SystemStateMac
             //  +------------------     +---------------+---------------+---------------------+----------------------+
             Row < idle_s,               exec_start_e,             executing_s,    none,                       And_<hw_idle_g, mission_executable_g>    >,
             Row < idle_s,               instruct_start_e,         instructing_s,  none,                       And_<hw_idle_g, mission_instructable_g>  >,
-            Row < idle_s,               assist_start_e,           assisting_s,    none,                       none                >,
+            //Row < idle_s,               assist_start_e,           assisting_s,    none,                       none                >,          //re-insert once (if) assist mode is developed
             Row < idle_s,               exec_done_e,              idle_s,         none,                       none                >,
             Row < idle_s,               instruct_done_e,          idle_s,         none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
@@ -242,21 +248,37 @@ SystemEngine* SystemEngine::instance_ = NULL;
 SystemEngine* SystemEngine::getInstance()
 {
     if (!instance_)   // Only allow one instance of class to be generated.
+    {
         instance_ = new SystemEngine();
+        instance_->init();
+    }
 
     return instance_;
 }
 
 SystemEngine::SystemEngine()
 {
-    ssm_ = boost::shared_ptr<SysStateMachine>(new SystemEngine::SysStateMachine());
-    ssm_->start();
+     ssm_ = boost::shared_ptr<SysStateMachine>(new SystemEngine::SysStateMachine());
+}
 
+void SystemEngine::init()
+{
+    ssm_->start();
 }
 
 bool SystemEngine::execute()
 {
     return(ssm_->process_event(exec_start_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
+bool SystemEngine::instruct()
+{
+    return(ssm_->process_event(instruct_start_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
+bool SystemEngine::assist()
+{
+    return(ssm_->process_event(assist_start_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
 void SystemEngine::executeDone()

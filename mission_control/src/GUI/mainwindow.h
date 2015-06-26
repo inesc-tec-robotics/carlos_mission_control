@@ -46,6 +46,9 @@
 #include <QWidget>
 #include <QPixmap>
 #include "ui_mainwindow.h"
+#include "ros/node_handle.h"
+#include "mission_control/HardwareStates.h"
+#include "mission_control/Progress.h"
 
 //forward declarations:
 class MissionHandler;
@@ -62,17 +65,13 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-
 private Q_SLOTS:
-
-    void initUI();
 
     void createNew();
 
     void load();
 
     void save();
-
     void saveAs();
 
 
@@ -80,22 +79,58 @@ private Q_SLOTS:
 
     void on_taskList_selection_changed(const QModelIndex & index, const QModelIndex & deselected);
 
+    void on_execStartButton_clicked();
+
+    void on_execPauseButton_clicked();
+
+    void on_execStopButton_clicked();
+
+    void on_execRetryButton_clicked();
+
+    void on_execSkipTaskButton_clicked();
+
+    void on_execSkipStudButton_clicked();
+
+    void on_instrStartButton_clicked();
+
+    void on_instrPauseButton_clicked();
+
+    void on_instrStopButton_clicked();
+
+    void on_instrRetryButton_clicked();
+
+    void on_instrSkipTaskButton_clicked();
+
 private:
+
+    void initUI();
+    void initExecuteTab();
+    void initInstructTab();
+    void initInfoTab();
 
     void updateTaskList();
 
     void updateMissionMeta();
 
-    void update();
+    void updateInfo();
 
     void hideTaskParams();
     void showTaskParams();
+
+    void hwStateCB(const mission_control::HardwareStates::ConstPtr &msg);
+    void execProgressCB(const mission_control::Progress::ConstPtr &msg);
+    void instrProgressCB(const mission_control::Progress::ConstPtr &msg);
 
     Ui::MainWindow *ui;
 
     MissionHandler* mh_;
 
     QStandardItemModel* task_list_model;
+
+    ros::NodeHandle n;
+    ros::Subscriber hw_state_sub;
+    ros::Subscriber exec_progress_sub;
+    ros::Subscriber instr_progress_sub;
 
 
 

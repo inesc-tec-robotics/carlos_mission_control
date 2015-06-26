@@ -25,7 +25,7 @@
 #include "execution_engine.hpp"
 #include "system_engine.hpp"
 #include "UI_API.hpp"
-#include "function_defines.hpp"
+#include "mission_control/function_defines.h"
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
@@ -84,7 +84,7 @@ struct nav_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::NAV_ERROR;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::NAV_ERROR;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                             (EXEC_ABORT)
                                                             (EXEC_RETRY)
@@ -115,7 +115,7 @@ struct weld_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::WELD_ERROR;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::WELD_ERROR;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                             (EXEC_ABORT)
                                                             (EXEC_RETRY)
@@ -143,7 +143,7 @@ struct hw_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event,FSM& )
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::HW_ERROR;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::HW_ERROR;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                             (EXEC_ABORT)
                                                             (EXEC_RETRY) );
@@ -166,7 +166,7 @@ struct nav_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& ,FSM&)
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::NAV;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::NAV;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                             (EXEC_ABORT)
                                                             (EXEC_PAUSE) );
@@ -199,7 +199,7 @@ struct mani_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& ,FSM&)
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::WELD;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::WELD;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                             (EXEC_ABORT)
                                                             (EXEC_PAUSE) );
@@ -224,10 +224,10 @@ struct wait_cancel_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::WAIT_CANCEL;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::WAIT_CANCEL;
         vector<string> temp;
         ExecutionEngine::getInstance()->setEnabledFunctions(temp);
-        ExecutionEngine::getInstance()->sendProgressUpdate();
+        ExecutionEngine::getInstance()->sendProgressUpdate("Waiting for action servers to cancel goals.");
 
         ROS_DEBUG("Execution engine entering wait for cancel state");
         ROS_INFO("Execution engine waiting for goal cancel.");
@@ -245,9 +245,9 @@ struct stopped_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
-        ExecutionEngine::getInstance()->current_state_ = ExecutionEngine::STOPPED;
+        ExecutionEngine::getInstance()->current_state_ = ExecState::STOPPED;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (EXEC_START) );
-        ExecutionEngine::getInstance()->sendProgressUpdate();
+        ExecutionEngine::getInstance()->sendProgressUpdate("Execution stopped and ready");
 
         //update mission state:
         if(MissionHandler::getInstance()->isLoaded())
@@ -423,7 +423,12 @@ struct ExecutionStateMachine_ : public msm::front::state_machine_def<ExecutionSt
             Row < nav_error_s,          skip_task_e,        nav_s,          increment_task_a,           more_tasks_g        >,
             Row < nav_error_s,          abort_e,            stopped_s,      none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
-            Row < wait_cancel_s,        goal_cancelled_e,   stopped_s,      none,                       none                >
+            Row < wait_cancel_s,        goal_cancelled_e,   stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        nav_done_e,         stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        mani_done_e,        stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        nav_fail_e,         stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        weld_fail_e,        stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        hw_fail_e,          stopped_s,      none,                       none                >
             > {};
 
     // Replaces the default no-transition response.
@@ -448,7 +453,10 @@ ExecutionEngine* ExecutionEngine::instance_ = NULL;
 ExecutionEngine* ExecutionEngine::getInstance()
 {
     if (!instance_)   // Only allow one instance of class to be generated.
+    {
         instance_ = new ExecutionEngine();
+        instance_->init();
+    }
 
     return instance_;
 }
@@ -543,6 +551,11 @@ void ExecutionEngine::goalCancelled()
     esm_->process_event(goal_cancelled_e());
 }
 
+void ExecutionEngine::hardwareError()
+{
+    esm_->process_event(hw_fail_e());
+}
+
 string ExecutionEngine::getCurrentTask()
 {
     if(tasks.size() <= 0)
@@ -585,12 +598,17 @@ geometry_msgs::PoseStamped ExecutionEngine::convert2PoseStamped(double x, double
     return nav_goal;
 }
 
-void ExecutionEngine::sendProgressUpdate()
+void ExecutionEngine::sendProgressUpdate(string description)
 {
     mission_control::Progress progress;
-    progress.engine_state = (unsigned int)current_state_;
+    progress.engine_state = (string)current_state_;
     progress.current_mission = MissionHandler::getInstance()->getLoadedName();
     progress.current_task = getCurrentTask();
+
+    if(description == "")   //no description added:
+        description = progress.engine_state + " - " + progress.current_task;
+
+    progress.description = description;
 
     for(map<string,bool>::iterator itr=enabled_functions.begin();itr!=enabled_functions.end();itr++)
     {
