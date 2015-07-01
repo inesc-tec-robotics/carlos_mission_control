@@ -47,15 +47,11 @@
 #include <QMessageBox>
 
 #include "ros/service_client.h"
-#include "mission_control/Start.h"
 #include "mission_control/Trigger.h"
-#include "mission_control/loadMission.h"
 #include "mission_control/getMissionList.h"
 #include "mission_control/getMissionMetaData.h"
 #include "mission_control/getTaskList.h"
 #include "mission_control/getTaskParams.h"
-#include "mission_control/createNewMission.h"
-#include "mission_control/saveMissionAs.h"
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
 
