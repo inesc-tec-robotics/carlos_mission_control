@@ -38,11 +38,13 @@ set(qt_srcs
 src/gui_node.cpp
 src/GUI/mainwindow.cpp
 src/GUI/loadMission.cpp
+src/GUI/ros_interface.cpp
 )
 
 set(qt_hdrs
 src/GUI/mainwindow.h
 src/GUI/loadMission.hpp
+src/GUI/ros_interface.hpp
 )
 
 qt4_automoc(${qt_srcs})

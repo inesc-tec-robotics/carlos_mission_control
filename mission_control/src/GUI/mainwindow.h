@@ -48,9 +48,6 @@
 #include "mission_control/HardwareStates.h"
 #include "mission_control/Progress.h"
 
-//forward declarations:
-class MissionHandler;
-
 namespace Ui {
 class MainWindow;
 }
@@ -99,11 +96,14 @@ private slots:
 
     void on_instrSkipTaskButton_clicked();
 
-    void on_execProgressUpdate(mission_control::ProgressConstPtr msg);
+public slots:
+    void execProgressUpdate(const mission_control::Progress::ConstPtr &msg);
+    void instrProgressUpdate(const mission_control::Progress::ConstPtr &msg);
+    void hwStateUpdate(mission_control::HardwareStates msg);
 
 signals:
 
-    void exec_progress_update_received(mission_control::ProgressConstPtr);
+    //void exec_progress_update_received(mission_control::ProgressConstPtr);
 
 private:
 
@@ -121,9 +121,9 @@ private:
     void hideTaskParams();
     void showTaskParams();
 
-    void hwStateCB(const mission_control::HardwareStates::ConstPtr &msg);
-    void execProgressCB(const mission_control::Progress::ConstPtr &msg);
-    void instrProgressCB(const mission_control::Progress::ConstPtr &msg);
+//    void hwStateCB(const mission_control::HardwareStates::ConstPtr &msg);
+//    void execProgressCB(const mission_control::Progress::ConstPtr &msg);
+//    void instrProgressCB(const mission_control::Progress::ConstPtr &msg);
 
     Ui::MainWindow *ui;
 

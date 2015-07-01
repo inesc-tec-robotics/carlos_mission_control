@@ -54,6 +54,7 @@
 #include "mission_control/getTaskParams.h"
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
+#include "ros_interface.hpp"
 
 
 
@@ -69,9 +70,9 @@ MainWindow::MainWindow(QWidget *parent) :
     initUI();
 
     //initialize ros rubscribers
-    hw_state_sub = n.subscribe(UIAPI_HW_STATES, 10, &MainWindow::hwStateCB, this);
-    exec_progress_sub = n.subscribe(UIAPI_EXEC_PROGRESS, 10, &MainWindow::execProgressCB, this);
-    instr_progress_sub = n.subscribe(UIAPI_INSTR_PROGRESS, 10, &MainWindow::instrProgressCB, this);
+//    hw_state_sub = n.subscribe(UIAPI_HW_STATES, 10, &MainWindow::hwStateCB, this);
+//    exec_progress_sub = n.subscribe(UIAPI_EXEC_PROGRESS, 10, &MainWindow::execProgressCB, this);
+//    instr_progress_sub = n.subscribe(UIAPI_INSTR_PROGRESS, 10, &MainWindow::instrProgressCB, this);
 
     updateInfo();
 }
@@ -505,6 +506,7 @@ void MainWindow::showTaskParams()
     ui->task_state->show();
 }
 
+/*
 void MainWindow::hwStateCB(const mission_control::HardwareStates::ConstPtr &msg)
 {
     //update state labels in bottom of window
@@ -594,6 +596,7 @@ void MainWindow::instrProgressCB(const mission_control::Progress::ConstPtr &msg)
     //update the meta info:
     updateMissionMeta();
 }
+*/
 
 void MainWindow::on_execStartButton_clicked()
 {
@@ -717,7 +720,16 @@ void MainWindow::on_instrSkipTaskButton_clicked()
     }
 }
 
-void MainWindow::on_execProgressUpdate(mission_control::ProgressConstPtr msg)
+void MainWindow::hwStateUpdate(mission_control::HardwareStates msg)
+{
+    //update state labels in bottom of window
+    ui->robot_state_label->setText(QString::fromStdString(msg.hardware_states[0].device_state));
+    ui->platform_state_label->setText(QString::fromStdString(msg.hardware_states[1].device_state));
+    ui->arm_state_label->setText(QString::fromStdString(msg.hardware_states[2].device_state));
+    ui->system_state_label->setText(QString::fromStdString(msg.hardware_states[3].device_state));
+}
+
+void MainWindow::execProgressUpdate(const mission_control::Progress::ConstPtr &msg)
 {
     //update the meta info:
     updateInfo();
@@ -800,3 +812,76 @@ void MainWindow::on_execProgressUpdate(mission_control::ProgressConstPtr msg)
     }
 }
 
+void MainWindow::instrProgressUpdate(const mission_control::Progress::ConstPtr &msg)
+{
+    //unhide the execution status and description labels:
+    ui->instr_status_label->show();
+    ui->instr_descrp_label->show();
+
+    //update the exection status and description:
+    ui->instr_status_label->setText(QString::fromStdString(msg->engine_state));
+    ui->instr_descrp_label->setText(QString::fromStdString(msg->description));
+    ui->mission_name->setText(QString::fromStdString(msg->current_mission));
+
+    //update the task list (color the current task)
+    for(int i=0;i<task_list_model->rowCount();i++)
+    {
+        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString().toStdString() == msg->current_task)
+            task_list_model->setData(task_list_model->index(i,0),Qt::red,Qt::ForegroundRole);
+        else
+            task_list_model->setData(task_list_model->index(i,0),Qt::black,Qt::ForegroundRole);
+    }
+
+    //update the enabled buttons:
+    //start:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_START)
+        {
+            ui->instrStartButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //pause:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_PAUSE)
+        {
+            ui->instrPauseButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //abort:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_ABORT)
+        {
+            ui->instrStopButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //retry:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_RETRY)
+        {
+            ui->instrRetryButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //skipTask:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_SKIP_TASK)
+        {
+            ui->instrSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
+        }
+    }
+
+    //update the meta info:
+    updateMissionMeta();
+}
