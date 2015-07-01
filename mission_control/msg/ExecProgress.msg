@@ -1,4 +1,0 @@
-string current_mission
-string current_task
-string current_stud
-uint8 exec_engine_state
