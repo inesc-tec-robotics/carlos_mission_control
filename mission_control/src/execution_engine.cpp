@@ -245,6 +245,7 @@ struct stopped_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
+        ExecutionEngine::getInstance()->tasks.clear();
         ExecutionEngine::getInstance()->current_state_ = ExecState::STOPPED;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (EXEC_START) );
         ExecutionEngine::getInstance()->sendProgressUpdate("Execution stopped and ready");

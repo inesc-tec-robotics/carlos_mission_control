@@ -10,6 +10,8 @@
 #define UIAPI_GET_MISSION_META      "mission_control/UI/getMissionMetaData"
 #define UIAPI_GET_TASK_LIST         "mission_control/UI/getTaskList"
 #define UIAPI_GET_MISSION_LIST      "mission_control/UI/getMissionList"
+#define UIAPI_GET_MISSION_NAME      "mission_control/UI/getMissionName"
+#define UIAPI_GET_TASK_PARAMS       "mission_control/UI/getTaskParams"
 
 #define UIAPI_EXEC_START            "mission_control/UI/execStart"
 #define UIAPI_EXEC_ABORT            "mission_control/UI/execAbort"
@@ -29,5 +31,6 @@
 #define UIAPI_INSTR_PROGRESS        "mission_control/UI/InstrProgress"
 
 #define UIAPI_HW_STATES             "mission_control/UI/HardwareStates"
+#define UIAPI_HEART_BEAT            "mission_control/UI/HeartBeat"
 
 #endif /* UIAPIDEFINES_H_ */

@@ -23,7 +23,7 @@ MissionHandler* MissionHandler::getInstance()
 
 MissionHandler::MissionHandler()
 {
-    auto_save_ = false;
+    auto_save_ = true;
     lock_ = false;
 }
 
@@ -135,6 +135,9 @@ bool MissionHandler::save()
         ROS_ERROR("Cannot save mission. Loaded mission doesn't have a name");
         return false;
     }
+
+    //update the "last saved tag":
+    ros::param::set("mission/last_saved", ros::Time::now().toSec());
 
     //dump the mission to file:
     string system_call_command = "rosparam dump " + getStoragePath() + "/" + mission_name + ".yaml /mission";
@@ -438,12 +441,11 @@ TaskParams MissionHandler::getTaskParams(int index)
     ros::param::get((key + "/stud_pattern/distribution"), params.stud_pattern.distribution);
     ros::param::get((key + "/stud_pattern/proximity"), params.stud_pattern.proximity);
     ros::param::get((key + "/stud_pattern/distance"), params.stud_pattern.distance);
+    ros::param::get((key + "/stud_pattern/press"), params.stud_pattern.force);
 
     int state;
     ros::param::get((key + "/state"), state);
     params.state = (mission::states)state;
-
-
 
     //Check if task has studs:
     if(!ros::param::has( (key + "/studs") ) )
@@ -553,7 +555,7 @@ vector<string> MissionHandler::getStudList(string task_name)
     XmlRpc::XmlRpcValue data;
     if(!ros::param::get(("mission/tasks/" + task_name + "/studs"), data))
     {
-        ROS_INFO("No studs in task");
+        ROS_DEBUG_STREAM("No studs in task: " << task_name);
         return studs;
     }
 
@@ -586,7 +588,7 @@ bool MissionHandler::addStud(string task_name, double x, double y, string stud_n
         }
 
         stringstream ss;
-        ss << "stud_" << index;
+        ss << "stud_" << index+1;
         stud_name = ss.str();
     }
 

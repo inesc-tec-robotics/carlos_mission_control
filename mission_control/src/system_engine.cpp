@@ -86,7 +86,10 @@ struct instructing_s : public msm::front::state<>
         ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
         SystemEngine::getInstance()->current_state_ = SysState::INSTRUCTING;
         SystemEngine::getInstance()->lockMissionHandler();
-        InstructionEngine::getInstance()->start();
+        if(!InstructionEngine::getInstance()->start())
+        {
+            ROS_ERROR_STREAM("Failed to start instruction engine for mission " << MissionHandler::getInstance()->getLoadedName());
+        }
     }
 
     template <class Event,class FSM>
@@ -162,13 +165,13 @@ struct mission_instructable_g
     template <class FSM,class EVT,class SourceState,class TargetState>
     bool operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
     {
-        if(MissionHandler::getInstance()->isLoaded())
+        if(!MissionHandler::getInstance()->isLoaded())
         {
             ROS_ERROR("Cannot instruct mission. No mission currently loaded.");
             return false;
         }
         mission::state state = MissionHandler::getInstance()->getState();
-        if(state != mission::CONFIGURED && state != mission::PARTIALLY_INSTRUCTED)      //should it be possible to instruct an already instructed mission?
+        if(state == mission::CONFIGURED || state == mission::PARTIALLY_INSTRUCTED)      //should it be possible to instruct an already instructed mission?
         {
             return true;
         }

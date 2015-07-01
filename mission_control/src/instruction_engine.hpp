@@ -135,6 +135,8 @@ private:
     void genPosDone(std::vector<geometry_msgs::Point> stud_positions);
     void genPosFailed();
     void genPosFeedback();
+    void navDone();
+    void navFailed();
     void goalCancelled();
     void hardwareError();
 

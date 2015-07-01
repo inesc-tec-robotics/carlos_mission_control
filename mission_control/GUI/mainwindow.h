@@ -39,10 +39,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QApplication>
 #include <QDebug>
 #include <QtGui>
 #include <QIcon>
 #include <QWidget>
+#include <QPixmap>
 #include "ui_mainwindow.h"
 #include "ros/node_handle.h"
 #include "mission_control/HardwareStates.h"
@@ -63,7 +65,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-private slots:
+private Q_SLOTS:
 
     void createNew();
 
@@ -99,12 +101,6 @@ private slots:
 
     void on_instrSkipTaskButton_clicked();
 
-    void on_execProgressUpdate(mission_control::ProgressConstPtr msg);
-
-signals:
-
-    void exec_progress_update_received(mission_control::ProgressConstPtr);
-
 private:
 
     void initUI();
@@ -126,6 +122,8 @@ private:
     void instrProgressCB(const mission_control::Progress::ConstPtr &msg);
 
     Ui::MainWindow *ui;
+
+    MissionHandler* mh_;
 
     QStandardItemModel* task_list_model;
 

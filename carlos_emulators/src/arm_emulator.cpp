@@ -14,8 +14,8 @@
 #include "mission_ctrl_msgs/executeWeldAction.h"
 #include "mission_ctrl_msgs/generateStudDistributionAction.h"
 
-#define WALL_HEIGHT 2.5
-#define WALL_WIDTH 0.7
+#define WALL_HEIGHT 0.4  //2.5
+#define WALL_WIDTH 0.4  //0.7
 
 using namespace std;
 
@@ -41,13 +41,13 @@ vector<geometry_msgs::Point> genStudPositions(string task_name)
     double stud_distance = 0.1;
     double proximity = 0.15;
 
-    double x = proximity;
+    double x;
     double y = proximity;
 
-    while(y < (WALL_HEIGHT - proximity)) // fill vertically
+    while(y <= (WALL_HEIGHT - proximity)) // fill vertically
     {
-
-        while(x < (WALL_WIDTH - proximity)) // fill horizontally
+        x = proximity;
+        while(x <= (WALL_WIDTH - proximity)) // fill horizontally
         {
             //add stud:
             geometry_msgs::Point stud;

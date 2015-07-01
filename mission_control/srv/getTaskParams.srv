@@ -1,0 +1,9 @@
+string name
+---
+bool success
+string name
+string state
+int16 number_of_studs
+string stud_type
+mission_control/StudPattern stud_pattern
+mission_control/NavGoal nav_goal

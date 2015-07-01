@@ -11,6 +11,8 @@ using namespace std;
 
 ActionInterface::ActionInterface()
 {
+    ee_ = NULL;
+    ie_ = NULL;
 }
 
 ActionInterface::~ActionInterface()
@@ -192,22 +194,38 @@ void ActionInterface::platformFinishedCB(const actionlib::SimpleClientGoalState 
     switch(state.state_)
     {
     case actionlib::SimpleClientGoalState::SUCCEEDED:
-        ee_->navDone();
+        if(ee_)
+        {cout << "ee ttrue" << endl;
+            ee_->navDone();}
+        if(ie_)
+        { cout << "ie ttrue" << endl;
+            ie_->navDone();}
         break;
     case actionlib::SimpleClientGoalState::PREEMPTED:
-        ee_->goalCancelled();
+        if(ee_)
+            ee_->goalCancelled();
+        if(ie_)
+            ie_->goalCancelled();
         break;
     case actionlib::SimpleClientGoalState::ABORTED:
-        ee_->navFailed();
+        if(ee_)
+            ee_->navFailed();
+        if(ie_)
+            ie_->navFailed();
         break;
     case actionlib::SimpleClientGoalState::LOST:
-        ee_->navFailed();
+        if(ee_)
+            ee_->navFailed();
+        if(ie_)
+            ie_->navFailed();
         break;
     default:
-        ee_->navFailed();
+        if(ee_)
+            ee_->navFailed();
+        if(ie_)
+            ie_->navFailed();
         break;
     }
-
 }
 
 void ActionInterface::platformActiveCB()
@@ -230,6 +248,7 @@ void ActionInterface::armFinishedCB(const actionlib::SimpleClientGoalState &stat
         ee_->maniDone();
         break;
     case actionlib::SimpleClientGoalState::PREEMPTED:
+        ee_->goalCancelled();
         break;
     case actionlib::SimpleClientGoalState::ABORTED:
         ee_->maniFailed();
@@ -292,6 +311,7 @@ void ActionInterface::genPosFinishedCB(const actionlib::SimpleClientGoalState &s
     switch(state.state_)
     {
     case actionlib::SimpleClientGoalState::SUCCEEDED:
+        cout << "length of vector received: " << result->positions.size() << endl;
         ie_->genPosDone(result->positions);
         break;
     case actionlib::SimpleClientGoalState::PREEMPTED:

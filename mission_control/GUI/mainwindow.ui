@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Close UI</string>
+     <string>Close</string>
     </property>
    </widget>
    <widget class="QTabWidget" name="tabWidget">
@@ -896,6 +896,12 @@
      </item>
     </layout>
    </widget>
+   <zorder>closeButton</zorder>
+   <zorder>tabWidget</zorder>
+   <zorder>verticalLayoutWidget_6</zorder>
+   <zorder>verticalLayoutWidget</zorder>
+   <zorder>horizontalLayoutWidget</zorder>
+   <zorder>platform_state_label</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="enabled">
@@ -925,7 +931,7 @@
   </widget>
   <action name="actionClose">
    <property name="text">
-    <string>Close UI</string>
+    <string>Close</string>
    </property>
    <property name="toolTip">
     <string extracomment="Closes the Device Handler">Close</string>

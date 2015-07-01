@@ -41,24 +41,15 @@
  */
 
 #include "mainwindow.h"
+#include "../mission_handler.hpp"
 #include "loadMission.hpp"
 #include <iostream>
 #include <QItemSelectionModel>
-#include <QMessageBox>
-
 #include "ros/service_client.h"
 #include "mission_control/Start.h"
 #include "mission_control/Trigger.h"
-#include "mission_control/loadMission.h"
-#include "mission_control/getMissionList.h"
-#include "mission_control/getMissionMetaData.h"
-#include "mission_control/getTaskList.h"
-#include "mission_control/getTaskParams.h"
-#include "mission_control/createNewMission.h"
-#include "mission_control/saveMissionAs.h"
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
-
 
 
 using namespace std;
@@ -67,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    mh_ = MissionHandler::getInstance();
+
     ui->setupUi(this);
     setWindowTitle(tr("CARLOS Mission Controller"));
 
@@ -94,7 +87,6 @@ void MainWindow::initUI()
             this,
             SLOT(on_taskList_selection_changed(QModelIndex, QModelIndex)) );
 
-    //qRegisterMetaType<mission_control::ProgressConstPtr>("ProgressPtr");
 
     //connect signal/slot for menubar
     connect(ui->closeButton,SIGNAL(clicked()),this,SLOT(close()));
@@ -103,7 +95,6 @@ void MainWindow::initUI()
     connect(ui->actionLoad, SIGNAL(triggered()),this, SLOT(load()));
     connect(ui->actionSave, SIGNAL(triggered()),this, SLOT(save()));
     connect(ui->actionSave_As, SIGNAL(triggered()),this, SLOT(saveAs()));
-    //connect(this, SIGNAL(exec_progress_update_received(ProgressPtr)), this, SLOT(on_execProgressUpdate(ProgressPtr)));
 
     //ui->task_params_layout->addRow(QString("Tast"), new QLabel("hej med test"));
 
@@ -136,18 +127,10 @@ void MainWindow::initInfoTab()
 
 void MainWindow::createNew()
 {
-    //check that a mission is loaded:
-    mission_control::Trigger srv;
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_GET_MISSION_NAME);
-    if(!client.call(srv))
+    //check if mission is currently open:
+    if(mh_->isLoaded())
     {
-        QMessageBox::warning(this,"Create new failed", "Couldn't get name of currently loaded mission",QMessageBox::Ok);
-        return;
-    }
-
-    if(srv.response.message != "")
-    {
-        string loaded_name = srv.response.message;
+        string loaded_name = mh_->getLoadedName();
 
         if(loaded_name == "")   //hence, not given a name yet
             loaded_name = "<not saved>";
@@ -182,27 +165,7 @@ void MainWindow::createNew()
     }
 
     //check if the name entered exists!
-    mission_control::getMissionList srv2;
-    ros::ServiceClient client2 = n.serviceClient<mission_control::getMissionList>(UIAPI_GET_MISSION_LIST);
-    if(!client2.call(srv2))
-    {
-        QMessageBox::warning(this,"Save failed","Couldn't get list of existing missions",QMessageBox::Ok);
-        return;
-    }
-
-    vector<string> missions = srv2.response.missions;
-
-    bool found = false;
-    for(int i=0;i<(int)missions.size();i++)
-    {
-        if(name == missions[i])
-        {
-            found = true;
-            break;
-        }
-    }
-
-    if(found)
+    if(mh_->isMission(name))
     {
         //prompt user for replace:
         int button = QMessageBox::question(this,"Replace",tr("Replace existing mission \"%1\"?").arg(QString::fromStdString(name)),
@@ -213,30 +176,18 @@ void MainWindow::createNew()
     }
 
     //create the new mission
-    mission_control::Trigger srv3;
-    srv3.request.input = name;
-    ros::ServiceClient client3 = n.serviceClient<mission_control::Trigger>(UIAPI_CREATE_NEW_MISSION);
-    if(!client3.call(srv3))
-    {
-        QMessageBox::warning(this,"Create new failed","Failed to call create new service",QMessageBox::Ok);
-        return;
-    }
+    mh_->createNew(name);
+
+    //save the new mission
+    mh_->save();
 }
 
 void MainWindow::load()
 {
     //check if mission is currently open:
-    mission_control::Trigger srv2;
-    ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_GET_MISSION_NAME);
-    if(!client2.call(srv2))
+    if(mh_->isLoaded())
     {
-        QMessageBox::warning(this,"Load failed","Failed to get name of currently loaded mission",QMessageBox::Ok);
-        return;
-    }
-
-    if(srv2.response.message != "")
-    {
-        string loaded_name = srv2.response.message;
+        string loaded_name = mh_->getLoadedName();
 
         if(loaded_name == "")   //hence, not given a name yet
             loaded_name = "<not saved>";
@@ -257,11 +208,8 @@ void MainWindow::load()
         return;
     string selected_mission = dialog.getSelectedMission();
 
-    //load the selected mission
-    mission_control::Trigger srv;
-    srv.request.input = selected_mission;
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_LOAD_MISSION);
-    if(!client.call(srv))
+    //open the selected mission
+    if(!mh_->load(selected_mission))
     {
         QMessageBox::warning(this,"Error","Failed to load mission. Does it exist?",QMessageBox::Ok);
         return;
@@ -269,36 +217,19 @@ void MainWindow::load()
 
     //fill the task list;
     updateInfo();
+
 }
 
 void MainWindow::save()
 {
     //check that a mission is loaded:
-    mission_control::Trigger srv;
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_GET_MISSION_NAME);
-    if(!client.call(srv))
-    {
-        QMessageBox::warning(this,"Save failed","Failed to call service",QMessageBox::Ok);
-        return;
-    }
-
-
-    if(srv.response.message == "")
+    if(!mh_->isLoaded())
     {
         QMessageBox::warning(this,"Save failed","No mission loaded",QMessageBox::Ok);
         return;
     }
 
-    //try to save:
-    mission_control::Trigger srv2;
-    ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_SAVE_MISSION);
-    if(!client2.call(srv2))
-    {
-        QMessageBox::warning(this,"Save failed","Failed to save mission",QMessageBox::Ok);
-        return;
-    }
-
-    if(!srv2.response.success)    //must be because the mission doesn't have a name.
+    if(!mh_->save())    //must be because the mission doesn't have a name.
     {
         saveAs();
     }
@@ -326,27 +257,7 @@ void MainWindow::saveAs()
     }
 
     //check if the name entered exists!
-    mission_control::getMissionList srv;
-    ros::ServiceClient client = n.serviceClient<mission_control::getMissionList>(UIAPI_GET_MISSION_LIST);
-    if(!client.call(srv))
-    {
-        QMessageBox::warning(this,"Save failed","Calling service failed",QMessageBox::Ok);
-        return;
-    }
-
-    vector<string> missions = srv.response.missions;
-
-    bool found = false;
-    for(int i=0;i<(int)missions.size();i++)
-    {
-        if(name == missions[i])
-        {
-            found = true;
-            break;
-        }
-    }
-
-    if(found)
+    if(mh_->isMission(name))
     {
         //prompt user for replace:
         int button = QMessageBox::question(this,"Replace",tr("Replace existing mission \"%1\"?").arg(QString::fromStdString(name)),
@@ -356,17 +267,7 @@ void MainWindow::saveAs()
             return;
     }
 
-
-    mission_control::Trigger srv2;
-    srv2.request.input = name;
-    ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_SAVE_MISSION_AS);
-    if(!client2.call(srv2))
-    {
-        QMessageBox::warning(this,"Save failed", "Calling service failed", QMessageBox::Ok);
-        return;
-    }
-
-    if(!srv2.response.success)
+    if(!mh_->saveAs(name))
     {
         QMessageBox::warning(this,"Save failed","Failed to save mission",QMessageBox::Ok);
         return;
@@ -392,26 +293,16 @@ void MainWindow::on_taskList_selection_changed(const QModelIndex &index, const Q
 {
     string task = index.data().toString().toStdString();
 
-    mission_control::getTaskParams srv;
-    srv.request.name = task;
-    ros::ServiceClient client = n.serviceClient<mission_control::getTaskParams>(UIAPI_GET_TASK_PARAMS);
-    if(!client.call(srv))
-    {
-        return;
-    }
+    TaskParams params = mh_->getTaskParams(task);
 
-    ui->task_name_label->setText(QString::fromStdString(srv.response.name));
-    ui->stud_type_label->setText(QString::fromStdString(srv.response.stud_type));
-    ui->stud_distribution_label->setText(QString::fromStdString(srv.response.stud_pattern.distribution));
-    ui->stud_dist_label->setText(QString::number(srv.response.stud_pattern.distance));
-    ui->stud_proximity_label->setText(QString::number(srv.response.stud_pattern.proximity));
-
-    stringstream ss;
-    ss << "x: " << srv.response.nav_goal.x << " y: " << srv.response.nav_goal.y << " yaw: " << srv.response.nav_goal.yaw;
-
-    ui->nav_goal_label->setText(QString::fromStdString( ss.str() ));
-    ui->number_of_studs_label->setText(QString::number(srv.response.number_of_studs));
-    ui->task_state->setText(QString::fromStdString(srv.response.state));
+    ui->task_name_label->setText(QString::fromStdString(params.name));
+    ui->stud_type_label->setText(QString::fromStdString(params.stud_type));
+    ui->stud_distribution_label->setText(QString::fromStdString(params.stud_pattern.distribution));
+    ui->stud_dist_label->setText(QString::number(params.stud_pattern.distance));
+    ui->stud_proximity_label->setText(QString::number(params.stud_pattern.proximity));
+    ui->nav_goal_label->setText(QString::fromStdString( params.navigation_goal.toString(true) ));
+    ui->number_of_studs_label->setText(QString::number(params.studs.size()));
+    ui->task_state->setText(QString::fromStdString(params.state.toString()));
 
     showTaskParams();
 }
@@ -419,14 +310,7 @@ void MainWindow::on_taskList_selection_changed(const QModelIndex &index, const Q
 void MainWindow::updateTaskList()
 {
     //get task list from mission handler:
-    mission_control::getTaskList srv;
-    ros::ServiceClient client = n.serviceClient<mission_control::getTaskList>(UIAPI_GET_TASK_LIST);
-    if(!client.call(srv))
-    {
-        return;
-    }
-
-    vector<string> task_list = srv.response.tasks;
+    vector<string> task_list = mh_->getTaskList();
 
     //clear model:
     task_list_model->clear();
@@ -449,15 +333,7 @@ void MainWindow::updateTaskList()
 
 void MainWindow::updateMissionMeta()
 {
-    mission_control::Trigger srv;
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_GET_MISSION_NAME);
-    if(!client.call(srv))
-    {
-        return;
-    }
-
-
-    if(srv.response.message == "")
+    if(!mh_->isLoaded())
     {
         ui->mission_name->setText("<no mission>");
         ui->cad_ref->setText("<no CAD>");
@@ -466,22 +342,17 @@ void MainWindow::updateMissionMeta()
         return;
     }
 
-    mission_control::getMissionMetaData srv2;
-    ros::ServiceClient client2 = n.serviceClient<mission_control::getMissionMetaData>(UIAPI_GET_MISSION_META);
-    if(!client2.call(srv2))
-    {
-        return;
-    }
-
-    ui->mission_name->setText(QString::fromStdString(srv2.response.name));
-    ui->cad_ref->setText(QString::fromStdString(srv2.response.cad));
-    ui->mission_state->setText(QString::fromStdString(srv2.response.state_description));
+    MissionParams params = mh_->getMissionParams();
+    ui->mission_name->setText(QString::fromStdString(params.name));
+    ui->cad_ref->setText(QString::fromStdString(params.CAD_ref));
+    ui->mission_state->setText(QString::fromStdString(params.state.toString()));
 }
 
 void MainWindow::updateInfo()
 {
     updateMissionMeta();
-    updateTaskList();
+    if(mh_->isLoaded())
+        updateTaskList();
 
 }
 
@@ -520,212 +391,6 @@ void MainWindow::hwStateCB(const mission_control::HardwareStates::ConstPtr &msg)
 
 void MainWindow::execProgressCB(const mission_control::Progress::ConstPtr &msg)
 {
-    //emit exec_progress_update_received(msg);
-
-    on_execProgressUpdate(msg);
-}
-
-void MainWindow::instrProgressCB(const mission_control::Progress::ConstPtr &msg)
-{
-    //unhide the execution status and description labels:
-    ui->instr_status_label->show();
-    ui->instr_descrp_label->show();
-
-    //update the exection status and description:
-    ui->instr_status_label->setText(QString::fromStdString(msg->engine_state));
-    ui->instr_descrp_label->setText(QString::fromStdString(msg->description));
-    ui->mission_name->setText(QString::fromStdString(msg->current_mission));
-
-    //update the task list (color the current task)
-    for(int i=0;i<task_list_model->rowCount();i++)
-    {
-        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString().toStdString() == msg->current_task)
-            task_list_model->setData(task_list_model->index(i,0),Qt::red,Qt::ForegroundRole);
-        else
-            task_list_model->setData(task_list_model->index(i,0),Qt::black,Qt::ForegroundRole);
-    }
-
-    //update the enabled buttons:
-    //start:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_START)
-        {
-            ui->instrStartButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //pause:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_PAUSE)
-        {
-            ui->instrPauseButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //abort:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_ABORT)
-        {
-            ui->instrStopButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //retry:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_RETRY)
-        {
-            ui->instrRetryButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //skipTask:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_SKIP_TASK)
-        {
-            ui->instrSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
-        }
-    }
-
-    //update the meta info:
-    updateMissionMeta();
-}
-
-void MainWindow::on_execStartButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_START);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_execPauseButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_PAUSE_RESUME);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_execStopButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_ABORT);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_execRetryButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_RETRY);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_execSkipTaskButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_SKIP_TASK);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_execSkipStudButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_SKIP_STUD);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-
-void MainWindow::on_instrStartButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_START);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_instrPauseButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_PAUSE_RESUME);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_instrStopButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_ABORT);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_instrRetryButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_RETRY);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_instrSkipTaskButton_clicked()
-{
-    mission_control::Trigger srv;
-
-    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_SKIP_TASK);
-    if(!client.call(srv))
-    {
-        ROS_ERROR("Failed to call service");
-    }
-}
-
-void MainWindow::on_execProgressUpdate(mission_control::ProgressConstPtr msg)
-{
-    //update the meta info:
-    updateInfo();
-
     //unhide the execution status and description labels:
     ui->exec_status_label->show();
     ui->exec_descrp_label->show();
@@ -802,5 +467,204 @@ void MainWindow::on_execProgressUpdate(mission_control::ProgressConstPtr msg)
             ui->execSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
         }
     }
+
+    //update the meta info:
+    updateInfo();
 }
 
+void MainWindow::instrProgressCB(const mission_control::Progress::ConstPtr &msg)
+{
+    //unhide the execution status and description labels:
+    ui->instr_status_label->show();
+    ui->instr_descrp_label->show();
+
+    //update the exection status and description:
+    ui->instr_status_label->setText(QString::fromStdString(msg->engine_state));
+    ui->instr_descrp_label->setText(QString::fromStdString(msg->description));
+    ui->mission_name->setText(QString::fromStdString(msg->current_mission));
+
+    //update the task list (color the current task)
+    for(int i=0;i<task_list_model->rowCount();i++)
+    {
+        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString().toStdString() == msg->current_task)
+            task_list_model->setData(task_list_model->index(i,0),Qt::red,Qt::ForegroundRole);
+        else
+            task_list_model->setData(task_list_model->index(i,0),Qt::black,Qt::ForegroundRole);
+    }
+
+    //update the enabled buttons:
+    //start:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_START)
+        {
+            ui->instrStartButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //pause:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_PAUSE)
+        {
+            ui->instrPauseButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //abort:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_ABORT)
+        {
+            ui->instrStopButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //retry:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_RETRY)
+        {
+            ui->instrRetryButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //skipTask:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_SKIP_TASK)
+        {
+            ui->instrSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
+        }
+    }
+
+    //update the meta info:
+    updateInfo();
+}
+
+
+void MainWindow::on_execStartButton_clicked()
+{
+    mission_control::Start srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Start>(UIAPI_EXEC_START);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execPauseButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_PAUSE_RESUME);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execStopButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_ABORT);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execRetryButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_RETRY);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execSkipTaskButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_SKIP_TASK);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_execSkipStudButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_SKIP_STUD);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+
+void MainWindow::on_instrStartButton_clicked()
+{
+    mission_control::Start srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Start>(UIAPI_INSTR_START);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_instrPauseButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_PAUSE_RESUME);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_instrStopButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_ABORT);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_instrRetryButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_RETRY);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_instrSkipTaskButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_SKIP_TASK);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}

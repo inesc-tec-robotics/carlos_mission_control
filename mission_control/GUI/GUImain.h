@@ -35,108 +35,25 @@
  ***************************************************************************
  *
  */
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
-#include <QMainWindow>
+#include <QtGui/QApplication>
 #include <QDebug>
-#include <QtGui>
-#include <QIcon>
-#include <QWidget>
-#include "ui_mainwindow.h"
-#include "ros/node_handle.h"
-#include "mission_control/HardwareStates.h"
-#include "mission_control/Progress.h"
+#include "mainwindow.h"
+#include "boost/thread.hpp"
 
-//forward declarations:
-class MissionHandler;
 
-namespace Ui {
-class MainWindow;
-}
-
-class MainWindow : public QMainWindow
+class GUImain
 {
-    Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-
-private slots:
-
-    void createNew();
-
-    void load();
-
-    void save();
-    void saveAs();
-
-
-    void on_taskList_clicked(const QModelIndex &index);
-
-    void on_taskList_selection_changed(const QModelIndex & index, const QModelIndex & deselected);
-
-    void on_execStartButton_clicked();
-
-    void on_execPauseButton_clicked();
-
-    void on_execStopButton_clicked();
-
-    void on_execRetryButton_clicked();
-
-    void on_execSkipTaskButton_clicked();
-
-    void on_execSkipStudButton_clicked();
-
-    void on_instrStartButton_clicked();
-
-    void on_instrPauseButton_clicked();
-
-    void on_instrStopButton_clicked();
-
-    void on_instrRetryButton_clicked();
-
-    void on_instrSkipTaskButton_clicked();
-
-    void on_execProgressUpdate(mission_control::ProgressConstPtr msg);
-
-signals:
-
-    void exec_progress_update_received(mission_control::ProgressConstPtr);
+     GUImain(int argc, char *argv[]);
+    ~GUImain();
 
 private:
-
-    void initUI();
-    void initExecuteTab();
-    void initInstructTab();
-    void initInfoTab();
-
-    void updateTaskList();
-
-    void updateMissionMeta();
-
-    void updateInfo();
-
-    void hideTaskParams();
-    void showTaskParams();
-
-    void hwStateCB(const mission_control::HardwareStates::ConstPtr &msg);
-    void execProgressCB(const mission_control::Progress::ConstPtr &msg);
-    void instrProgressCB(const mission_control::Progress::ConstPtr &msg);
-
-    Ui::MainWindow *ui;
-
-    QStandardItemModel* task_list_model;
-
-    ros::NodeHandle n;
-    ros::Subscriber hw_state_sub;
-    ros::Subscriber exec_progress_sub;
-    ros::Subscriber instr_progress_sub;
+     void runGUIthread(int argc, char *argv[]);
 
 
-
+     boost::thread GUIthread;
 
 };
 
-#endif // MAINWINDOW_H
+

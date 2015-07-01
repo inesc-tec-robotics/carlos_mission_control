@@ -26,22 +26,21 @@ set(QT_QMAKE_EXECUTABLE /usr/bin/qmake-qt4) #Force the system to use QT4
 find_package(Qt4 REQUIRED)
 
 # enable/disable some Qt features
-set( QT_USE_QTOPENGL TRUE )
-SET(QT_USE_QTXML TRUE)
+#set(QT_USE_QTOPENGL TRUE)
+#SET(QT_USE_QTXML TRUE)
 SET(QT_USE_QTGUI true)
 SET(QT_USE_QTCORE true)
-SET(QT_USE_QDBUS true)
+#SET(QT_USE_QDBUS true)
 
 include(${QT_USE_FILE})
 
 set(qt_srcs
-src/GUI/GUImain.cpp
+src/gui_node.cpp
 src/GUI/mainwindow.cpp
 src/GUI/loadMission.cpp
 )
 
 set(qt_hdrs
-src/GUI/GUImain.h
 src/GUI/mainwindow.h
 src/GUI/loadMission.hpp
 )
@@ -97,6 +96,8 @@ include_directories(${QT_INCLUDE_DIR})
    uiMessage.msg
    Function.msg
    Progress.msg
+   NavGoal.msg
+   StudPattern.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -104,13 +105,9 @@ add_service_files(
    FILES
    getTaskList.srv
    getMissionList.srv
-   loadMission.srv
-   saveMission.srv
-   saveMissionAs.srv
    getMissionMetaData.srv
-   createNewMission.srv
-   execStart.srv
    Trigger.srv
+   getTaskParams.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -167,8 +164,8 @@ include_directories(
 ## Declare a cpp executable
 # add_executable(mission_control_node src/mission_control_node.cpp)
 
-add_executable(mission_controller
-               src/main.cpp
+add_executable(mission_controller_node
+               src/mission_controller_node.cpp
                src/mission_handler.cpp
                src/UI_API.cpp
                src/hw_state_machine.cpp
@@ -176,12 +173,20 @@ add_executable(mission_controller
                src/execution_engine.cpp
                src/instruction_engine.cpp
                src/action_interface.cpp
-	       ${qt_srcs}
+               )
+
+add_executable(mission_controller_gui
+               ${qt_srcs}
                ${qt_moc_srcs}
                ${uis_h}
                )
                
-target_link_libraries(mission_controller
+target_link_libraries(mission_controller_node
+                      ${catkin_LIBRARIES}
+                      ${Boost_LIBRARIES}
+                      )
+
+target_link_libraries(mission_controller_gui
                       ${catkin_LIBRARIES}
                       ${Boost_LIBRARIES}
                       ${QT_LIBRARIES}
@@ -189,7 +194,8 @@ target_link_libraries(mission_controller
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
- add_dependencies(mission_controller mission_control_generate_messages_cpp)
+ add_dependencies(mission_controller_node mission_control_generate_messages_cpp)
+ add_dependencies(mission_controller_gui mission_control_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(mission_control_node

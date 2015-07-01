@@ -2,13 +2,15 @@
 #include "mission_handler.hpp"
 #include "UI_API.hpp"
 #include "hw_state_machine.hpp"
+#include "std_msgs/Bool.h"
 #include "mission_control/HardwareStates.h"
 #include "system_engine.hpp"
 #include "execution_engine.hpp"
 #include "instruction_engine.hpp"
 #include "mission_control/ui_api_defines.h"
 
-#define PUB_FREQ 10.0 //publication frequency in Hz
+#define STATE_PUB_FREQ 10.0 //publication frequency in Hz for hardware states
+#define HB_PUB_FREQ 1.0 //publication frequency in Hz for hear beat
 
 using namespace std;
 
@@ -31,6 +33,8 @@ UiAPI::UiAPI()
     get_mission_meta_srv_ = n.advertiseService(UIAPI_GET_MISSION_META, &UiAPI::getMissionMetaCB, this);
     get_task_list_srv_ = n.advertiseService(UIAPI_GET_TASK_LIST, &UiAPI::getTaskListCB, this);
     get_mission_list_srv_ = n.advertiseService(UIAPI_GET_MISSION_LIST, &UiAPI::getMissionListCB, this);
+    get_mission_name_srv_ = n.advertiseService(UIAPI_GET_MISSION_NAME, &UiAPI::getMissionNameCB, this);
+    get_task_params_srv_ = n.advertiseService(UIAPI_GET_TASK_PARAMS, &UiAPI::getTaskParamsCB, this);
     exec_start_srv_ = n.advertiseService(UIAPI_EXEC_START, &UiAPI::execStartCB, this);
     exec_abort_srv_ = n.advertiseService(UIAPI_EXEC_ABORT, &UiAPI::execAbortCB, this);
     exec_pause_srv_ = n.advertiseService(UIAPI_EXEC_PAUSE_RESUME, &UiAPI::execPauseCB, this);
@@ -54,12 +58,24 @@ UiAPI::UiAPI()
     //create publisher of states:
     state_pub_ = n.advertise<mission_control::HardwareStates>(UIAPI_HW_STATES,10);
 
+    //create publisher of heart beat:
+    heart_beat_pub_ = n.advertise<std_msgs::Bool>(UIAPI_HEART_BEAT,10);
+
     //create timer for state publishing:
-    state_pub_timer_ = n.createTimer(ros::Duration((1/PUB_FREQ)), &UiAPI::statePubTimeout, this);
+    state_pub_timer_ = n.createTimer(ros::Duration((1/STATE_PUB_FREQ)), &UiAPI::statePubTimeout, this);
+
+    //create timer for state publishing:
+    heart_beat_pub_timer_ = n.createTimer(ros::Duration((1/HB_PUB_FREQ)), &UiAPI::heartBeatPubTimeout, this);
 }
 
 UiAPI::~UiAPI()
 {
+    //notisfy UI that mission control is (intentionally) shutting down.
+    cout << "UIAPI shutting down" << endl;
+    std_msgs::Bool msg;
+    msg.data = false;
+    heart_beat_pub_.publish(msg);
+    //usleep(5000000);
 }
 
 void UiAPI::execProgressUpdate(mission_control::Progress &progress)
@@ -97,37 +113,40 @@ bool UiAPI::getMissionListCB(mission_control::getMissionList::Request &request, 
     return true;
 }
 
-bool UiAPI::loadMissionCB(mission_control::loadMission::Request &request, mission_control::loadMission::Response &response)
+bool UiAPI::loadMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    ROS_DEBUG_STREAM("loadMissionCB - name: " << request.name);
-    if(!MissionHandler::getInstance()->isMission(request.name))
+    ROS_DEBUG_STREAM("loadMissionCB - name: " << request.input);
+    if(!MissionHandler::getInstance()->isMission(request.input))
         return false;
 
-    if(!MissionHandler::getInstance()->load(request.name))
+    if(!MissionHandler::getInstance()->load(request.input))
         return false;
 
     return true;
 }
 
-bool UiAPI::saveMissionCB(mission_control::saveMission::Request &request, mission_control::saveMission::Response &response)
+bool UiAPI::saveMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_DEBUG("saveMissionCB");
+    response.success = false;
     if(!MissionHandler::getInstance()->isLoaded())
         return false;
 
     if(!MissionHandler::getInstance()->save())
         return false;
 
+    response.success = true;
+
     return true;
 }
 
-bool UiAPI::saveMissionAsCB(mission_control::saveMissionAs::Request &request, mission_control::saveMissionAs::Response &response)
+bool UiAPI::saveMissionAsCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    ROS_DEBUG_STREAM("saveMissionAsCB - name: " << request.name);
+    ROS_DEBUG_STREAM("saveMissionAsCB - name: " << request.input);
     if(!MissionHandler::getInstance()->isLoaded())
         return false;
 
-    if(!MissionHandler::getInstance()->saveAs(request.name))
+    if(!MissionHandler::getInstance()->saveAs(request.input))
         return false;
 
     return true;
@@ -136,12 +155,25 @@ bool UiAPI::saveMissionAsCB(mission_control::saveMissionAs::Request &request, mi
 bool UiAPI::getMissionMetaCB(mission_control::getMissionMetaData::Request &request, mission_control::getMissionMetaData::Response &response)
 {
     ROS_DEBUG_STREAM("getMissionMetaCB - name: " << request.name);
-    if(!MissionHandler::getInstance()->isMission(request.name))
-    {
-        return false;
-    }
 
-    MissionParams params = MissionHandler::getInstance()->getMissionParams(request.name);
+    MissionParams params;
+
+    if(request.name == "")  //hence request for currently loaded:
+    {
+        if(!MissionHandler::getInstance()->isLoaded())
+        {
+            return false;
+        }
+        params = MissionHandler::getInstance()->getMissionParams();
+    }
+    else
+    {
+        if(!MissionHandler::getInstance()->isMission(request.name))
+        {
+            return false;
+        }
+        params = MissionHandler::getInstance()->getMissionParams(request.name);
+    }
 
     response.cad = params.CAD_ref;
     response.name = params.name;
@@ -154,14 +186,51 @@ bool UiAPI::getMissionMetaCB(mission_control::getMissionMetaData::Request &reque
     return true;
 }
 
-bool UiAPI::createNewMissionCB(mission_control::createNewMission::Request &request, mission_control::createNewMission::Response &response)
+bool UiAPI::getMissionNameCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    ROS_DEBUG_STREAM("createNewMissionCB - name: " << request.name);
+    ROS_DEBUG_STREAM("getMissionNameCB");
 
-    if(request.name == "")
+    response.message = MissionHandler::getInstance()->getLoadedName();
+    response.success = true;
+
+    return true;
+}
+
+bool UiAPI::getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response)
+{
+
+    TaskParams params = MissionHandler::getInstance()->getTaskParams(request.name);
+
+    if(response.name == params.name)
     {
         response.success = false;
-        response.description = "No name provided";
+        return false;
+    }
+
+    response.name = params.name;
+    response.state = params.state.toString();
+    response.number_of_studs = params.studs.size();
+    response.nav_goal.x = params.navigation_goal.x;
+    response.nav_goal.y = params.navigation_goal.y;
+    response.nav_goal.yaw = params.navigation_goal.yaw;
+    response.stud_type = params.stud_type;
+    response.stud_pattern.distance = params.stud_pattern.distance;
+    response.stud_pattern.proximity = params.stud_pattern.proximity;
+    response.stud_pattern.press = params.stud_pattern.force;
+    response.stud_pattern.distribution = params.stud_pattern.distribution;
+    response.success = true;
+
+    return true;
+}
+
+bool UiAPI::createNewMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    ROS_DEBUG_STREAM("createNewMissionCB - name: " << request.input);
+
+    if(request.input == "")
+    {
+        response.success = false;
+        response.message = "No name provided";
         return false;
     }
 
@@ -170,29 +239,29 @@ bool UiAPI::createNewMissionCB(mission_control::createNewMission::Request &reque
         MissionHandler::getInstance()->save();
     }
 
-    if(!MissionHandler::getInstance()->createNew(request.name))
+    if(!MissionHandler::getInstance()->createNew(request.input))
     {
         response.success = false;
-        response.description = "Mission already exists";
+        response.message = "Mission already exists";
         return false;
     }
 
     response.success = true;
-    response.description = "succesfully created new mission";
+    response.message = "succesfully created new mission";
     return true;
 }
 
-bool UiAPI::execStartCB(mission_control::execStart::Request &request, mission_control::execStart::Response &response)
+bool UiAPI::execStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    ROS_DEBUG_STREAM("execStartCB - name: " << request.name);
+    ROS_DEBUG_STREAM("execStartCB - name: " << request.input);
 
-    if(request.name != "" && request.name != MissionHandler::getInstance()->getLoadedName())
+    if(request.input != "" && request.input != MissionHandler::getInstance()->getLoadedName())
     {
         //load the mission:
-        if(!MissionHandler::getInstance()->load(request.name));
+        if(!MissionHandler::getInstance()->load(request.input));
         {
             response.success = false;
-            response.description = "Mission requested does not exist.";
+            response.message = "Mission requested does not exist.";
         }
     }
 
@@ -246,17 +315,17 @@ bool UiAPI::execRetryCB(mission_control::Trigger::Request &request, mission_cont
     return true;
 }
 
-bool UiAPI::instrStartCB(mission_control::execStart::Request &request, mission_control::execStart::Response &response)
+bool UiAPI::instrStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    ROS_DEBUG_STREAM("instrStartCB - name: " << request.name);
+    ROS_DEBUG_STREAM("instrStartCB - name: " << request.input);
 
-    if(request.name != "" && request.name != MissionHandler::getInstance()->getLoadedName())
+    if(request.input != "" && request.input != MissionHandler::getInstance()->getLoadedName())
     {
         //load the mission:
-        if(!MissionHandler::getInstance()->load(request.name));
+        if(!MissionHandler::getInstance()->load(request.input));
         {
             response.success = false;
-            response.description = "Mission requested does not exist.";
+            response.message = "Mission requested does not exist.";
         }
     }
 
@@ -331,4 +400,11 @@ void UiAPI::statePubTimeout(const ros::TimerEvent& event)
     states.hardware_states.push_back(manipulator_state);
 
     state_pub_.publish(states);
+}
+
+void UiAPI::heartBeatPubTimeout(const ros::TimerEvent &event)
+{
+    std_msgs::Bool msg;
+    msg.data = true;
+    heart_beat_pub_.publish(msg);
 }

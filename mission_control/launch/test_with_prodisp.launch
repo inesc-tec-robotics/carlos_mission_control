@@ -5,6 +5,8 @@
   
   <node name="platform_emulator" pkg="carlos_emulators" type="platform_emulator" output="screen" respawn="true" />
     
-  <node name="mission_controller" pkg="mission_control" type="mission_controller" output="screen" respawn="false" args="gui" required="true" />
+  <node name="mission_controller" pkg="mission_control" type="mission_controller_node" output="screen" respawn="false" required="true" />
+  
+  <node name="GUI" pkg="mission_control" type="mission_controller_gui" output="screen" respawn="false" />
   
 </launch>

@@ -1,10 +1,10 @@
 #define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-#define BOOST_MPL_LIMIT_VECTOR_SIZE 30 //increasing limit of max sice as needed in trans. table
-#define BOOST_MPL_LIMIT_MAP_SIZE 30 //
+#define BOOST_MPL_LIMIT_VECTOR_SIZE 40 //increasing limit of max sice as needed in trans. table
+#define BOOST_MPL_LIMIT_MAP_SIZE 40 //
 
 #include <iostream>
 // we have more than the default 20 transitions, so we need to require more from Boost.MPL
-#include "boost/mpl/vector/vector30.hpp"
+#include "boost/mpl/vector/vector40.hpp"
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/msm/back/state_machine.hpp>
@@ -121,7 +121,7 @@ struct nav_s : public msm::front::state<>
         InstructionEngine::getInstance()->current_state_ = InstrState::NAV;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
                                                               (INSTR_ABORT)
-                                                              (EXEC_PAUSE) );
+                                                              (INSTR_PAUSE) );
 
         InstructionEngine::getInstance()->sendProgressUpdate();
 
@@ -168,11 +168,12 @@ struct wait_cancel_s : public msm::front::state<>
         ROS_DEBUG("Instruction engine leaving wait for cancelled state");
     }
 };
-struct stopped_s : public msm::front::state<>
+struct  stopped_s : public msm::front::state<>
 {
     template <class Event,class FSM>
     void on_entry(Event const& event ,FSM&)
     {
+        InstructionEngine::getInstance()->tasks.clear();
         InstructionEngine::getInstance()->current_state_ = InstrState::STOPPED;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (INSTR_START) );
         InstructionEngine::getInstance()->sendProgressUpdate("Instruction stopped and ready");
@@ -338,6 +339,8 @@ struct hw_idle_g
         if(HardwareStateMachine::getInstance()->getRobotState() == hardware::IDLE)
             return true;
 
+        ROS_ERROR("Robot state not idle. Cannot start instruction!");
+
         return false;
     }
 };
@@ -346,10 +349,10 @@ struct more_tasks_g
     template <class FSM,class EVT,class SourceState,class TargetState>
     bool operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
     {
-        //        if(task_n == (int)tasks.size()-1)
-        //            return false;
-        //        else
-        //            return true;
+        if(InstructionEngine::getInstance()->task_n == (int)InstructionEngine::getInstance()->tasks.size()-1)
+            return false;
+        else
+            return true;
     }
 };
 struct mission_instructable_g
@@ -368,7 +371,10 @@ struct mission_instructable_g
             return true;
         }
         else
+        {
+            ROS_ERROR("Mission not instructable");
             return false;
+        }
     }
 };
 struct task_gen_done_g
@@ -408,13 +414,15 @@ struct InstructionStateMachine_ : public msm::front::state_machine_def<Instructi
             //  +------------------     +---------------+---------------+---------------------+----------------------+
             //Row < stopped_s,            start_e,            teach_s,        prepare_instruction_a,      And_<hw_idle_g, mission_instructable_g >     >,
             //Row < stopped_s,            start_e,            generate_s,     prepare_instruction_a,      And_<hw_idle_g, mission_instructable_g, Not_<task_gen_done_g> >     >,
+            Row < stopped_s,            start_e,            stopped_s,      none,                       none               >,
             Row < stopped_s,            start_e,            nav_s,          prepare_instruction_a,      And_<hw_idle_g, mission_instructable_g >                >,
             Row < stopped_s,            hw_fail_e,          hw_error_s,     none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
-            Row < nav_s,                nav_done_e,         generate_s,     none,                       task_gen_done_g >,          //else if stud gen HAS been done
+            Row < nav_s,                nav_done_e,         teach_s,        none,                       task_gen_done_g >,          //else if stud gen HAS been done
             Row < nav_s,                nav_done_e,         generate_s,     none,                       Not_<task_gen_done_g> >,    //if stud generation NOT done
             Row < nav_s,                nav_fail_e,         nav_error_s,    none,                       none                >,
             Row < nav_s,                hw_fail_e,          hw_error_s,     none,                       none                >,
+            Row < nav_s,                abort_e,            wait_cancel_s,  cancel_goals_a,             none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < generate_s,           gen_done_e,         teach_s,        none,                       none                >,
             Row < generate_s,           gen_fail_e,         gen_error_s,    none,                       none                >,
@@ -443,7 +451,14 @@ struct InstructionStateMachine_ : public msm::front::state_machine_def<Instructi
             Row < teach_error_s,        skip_task_e,        nav_s,          increment_task_a,           more_tasks_g        >, //jump to next task is more exists
             Row < teach_error_s,        abort_e,            stopped_s,      none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
-            Row < wait_cancel_s,        cancelled_e,        stopped_s,      none,                       none                >
+            Row < wait_cancel_s,        cancelled_e,        stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        nav_done_e,         stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        teach_done_e,       stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        gen_done_e,         stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        nav_fail_e,         stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        teach_fail_e,       stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        gen_fail_e,         stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        hw_fail_e,          stopped_s,      none,                       none                >
             > {};
 
     // Replaces the default no-transition response.
@@ -510,7 +525,6 @@ void InstructionEngine::genPosDone(vector<geometry_msgs::Point> stud_positions)
     //add the studs to the task
     for(int i=0;i<(int)stud_positions.size();i++)
     {
-        stud_positions[i].x;
         MissionHandler::getInstance()->addStud(getCurrentTask(), stud_positions[i].x, stud_positions[i].y);
     }
 
@@ -529,6 +543,16 @@ void InstructionEngine::genPosFailed()
 void InstructionEngine::genPosFeedback()
 {
 
+}
+
+void InstructionEngine::navDone()
+{
+    ism_->process_event(nav_done_e());
+}
+
+void InstructionEngine::navFailed()
+{
+    ism_->process_event(nav_fail_e());
 }
 
 void InstructionEngine::goalCancelled()

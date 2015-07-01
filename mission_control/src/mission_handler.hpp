@@ -98,11 +98,12 @@ struct NavGoal
     double yaw;
 };
 
-struct StudPattern
+struct StudPattern  //could be replaced by StudPattern.msg - yet here we could add functions.
 {
     std::string distribution;
     double distance;
     double proximity;
+    double force;
 };
 
 struct TaskParams
