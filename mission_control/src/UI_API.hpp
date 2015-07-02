@@ -19,10 +19,12 @@
 #include "ros/timer.h"
 #include "mission_control/getTaskList.h"
 #include "mission_control/getMissionList.h"
-#include "mission_control/getMissionMetaData.h"
-#include "mission_control/getTaskParams.h"
+#include "mission_control/getMissionData.h"
+#include "mission_control/getTaskData.h"
 #include "mission_control/Progress.h"
 #include "mission_control/Trigger.h"
+#include "mission_control/setMissionData.h"
+#include "mission_control/setTaskData.h"
 
 
 
@@ -31,10 +33,10 @@ class UiAPI
 
 public:
     static UiAPI* getInstance();
-//    {
-//        static UiAPI instance;
-//        return instance;
-//    }
+    //    {
+    //        static UiAPI instance;
+    //        return instance;
+    //    }
 
     ~UiAPI();
 
@@ -47,9 +49,9 @@ private:
 
     bool getMissionListCB(mission_control::getMissionList::Request &request, mission_control::getMissionList::Response &response);
     bool getTaskListCB(mission_control::getTaskList::Request &request, mission_control::getTaskList::Response &response);
-    bool getMissionMetaCB(mission_control::getMissionMetaData::Request &request, mission_control::getMissionMetaData::Response &response);
+    bool getMissionDataCB(mission_control::getMissionData::Request &request, mission_control::getMissionData::Response &response);
     bool getMissionNameCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);    //message is used to return the name
-    bool getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response);
+    bool getTaskDataCB(mission_control::getTaskData::Request &request, mission_control::getTaskData::Response &response);
 
     bool loadMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool saveMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
@@ -70,6 +72,14 @@ private:
     bool instrSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool instrRetryCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
 
+    bool editStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool editStopCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+
+    bool setMissionDataCB(mission_control::setMissionData::Request &request, mission_control::setMissionData::Response &response);
+    bool setTaskDataCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response);
+    bool addTaskCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response);
+    bool deleteTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+
 
     void statePubTimeout(const ros::TimerEvent &event);
     void heartBeatPubTimeout(const ros::TimerEvent &event);
@@ -86,11 +96,17 @@ private:
     ros::ServiceServer save_mission_as_srv_;
 
     //data retreival services
-    ros::ServiceServer get_mission_meta_srv_;
+    ros::ServiceServer get_mission_data_srv_;
     ros::ServiceServer get_task_list_srv_;
     ros::ServiceServer get_mission_list_srv_;
     ros::ServiceServer get_mission_name_srv_;
-    ros::ServiceServer get_task_params_srv_;
+    ros::ServiceServer get_task_data_srv_;
+
+    //data change services
+    ros::ServiceServer set_mission_data_srv_;
+    ros::ServiceServer set_task_data_srv_;
+    ros::ServiceServer add_task_data_srv_;
+    ros::ServiceServer delete_task_srv_;
 
     //execution control services
     ros::ServiceServer exec_start_srv_;
@@ -107,6 +123,9 @@ private:
     ros::ServiceServer instr_skip_task_srv_;
     ros::ServiceServer instr_retry_srv_;
 
+    //edit control services
+    ros::ServiceServer edit_start_srv_;
+    ros::ServiceServer edit_stop_srv_;
 
     ros::Publisher state_pub_;
     ros::Publisher heart_beat_pub_;

@@ -12,6 +12,7 @@
 #include "mission_ctrl_msgs/movePlatformAction.h"
 #include "mission_ctrl_msgs/mission_ctrl_defines.h"
 #include "mission_ctrl_msgs/hardware_state.h"
+#include "text_color_defines.h"
 
 
 using namespace std;
@@ -30,14 +31,17 @@ void moveActionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
 
     mission_ctrl_msgs::movePlatformResult result;
 
-    ROS_INFO_STREAM("Received a goal - navigate to goal x: " << goal->nav_goal.pose.position.x << "  y: "
-                    << goal->nav_goal.pose.position.y << "  w, x, y, z: "
-                    << goal->nav_goal.pose.orientation.w << ", "
-                    << goal->nav_goal.pose.orientation.x << ", "
-                    << goal->nav_goal.pose.orientation.y << ", "
-                    << goal->nav_goal.pose.orientation.z << ", ");
+    ROS_DEBUG_STREAM("Received a goal - navigate to goal x: " << goal->nav_goal.pose.position.x << "  y: "
+                     << goal->nav_goal.pose.position.y << "  w, x, y, z: "
+                     << goal->nav_goal.pose.orientation.w << ", "
+                     << goal->nav_goal.pose.orientation.x << ", "
+                     << goal->nav_goal.pose.orientation.y << ", "
+                     << goal->nav_goal.pose.orientation.z << ", ");
 
-    cout << "Please select outcome: " << endl;
+
+    cout << BOLDWHITE << "-----------------------------------------" << endl;
+    cout << BOLDGREEN << "Platform emulator - Navigating" << endl;
+    cout << BOLDWHITE << "-----------------------------------------" << RESET << endl << endl;
 
     while(true)
     {

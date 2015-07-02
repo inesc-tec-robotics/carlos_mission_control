@@ -239,6 +239,25 @@ bool MissionHandler::isMission(string name)
     return false;
 }
 
+bool MissionHandler::isTask(string task_name)
+{
+    //check index:
+    vector<string> tasks = getTaskList();
+
+    bool found = false;
+
+    for(int i=0;i<(int)tasks.size();i++)
+    {
+        if(tasks[i] == task_name)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    return found;
+}
+
 mission::state MissionHandler::getState()
 {
     if(!isLoaded())
@@ -381,12 +400,12 @@ vector<string> MissionHandler::getInstructableTasks()
     return instructable_tasks;
 }
 
-TaskParams MissionHandler::getTaskParams(string task_name)
+TaskData MissionHandler::getTaskData(string task_name)
 {
     if(!isLoaded())
     {
         ROS_ERROR("Cannot get task params. No mission loaded");
-        return TaskParams();
+        return TaskData();
     }
 
     //check index:
@@ -406,19 +425,19 @@ TaskParams MissionHandler::getTaskParams(string task_name)
     if(index == -1)
     {
         ROS_ERROR_STREAM("Failed to get params. Taskname: " << task_name << " wasn't found.");
-        return TaskParams();
+        return TaskData();
     }
 
-    return getTaskParams(index);
+    return getTaskData(index);
 }
 
-TaskParams MissionHandler::getTaskParams(int index)
+TaskData MissionHandler::getTaskData(int index)
 {
     //Check that a mission is loaded:
     if(!isLoaded())
     {
         ROS_ERROR("Cannot get task params. No mission loaded");
-        return TaskParams();
+        return TaskData();
     }
 
     //check index:
@@ -427,12 +446,12 @@ TaskParams MissionHandler::getTaskParams(int index)
     if(index > (int)tasks.size()-1 || index < 0)
     {
         ROS_ERROR_STREAM("Failed to get task params. Index: " << index << " is out of range.");
-        return TaskParams();
+        return TaskData();
     }
 
     string key = "mission/tasks/" + tasks[index];
 
-    TaskParams params;
+    TaskData params;
     params.name = tasks[index];
     ros::param::get((key + "/nav_goal/x"), params.navigation_goal.x);
     ros::param::get((key + "/nav_goal/y"), params.navigation_goal.y);
@@ -441,7 +460,7 @@ TaskParams MissionHandler::getTaskParams(int index)
     ros::param::get((key + "/stud_pattern/distribution"), params.stud_pattern.distribution);
     ros::param::get((key + "/stud_pattern/proximity"), params.stud_pattern.proximity);
     ros::param::get((key + "/stud_pattern/distance"), params.stud_pattern.distance);
-    ros::param::get((key + "/stud_pattern/press"), params.stud_pattern.force);
+    ros::param::get((key + "/stud_pattern/press"), params.stud_pattern.press);
 
     int state;
     ros::param::get((key + "/state"), state);
@@ -469,9 +488,9 @@ TaskParams MissionHandler::getTaskParams(int index)
     return params;
 }
 
-MissionParams MissionHandler::getMissionParams()
+MissionData MissionHandler::getMissionParams()
 {
-    MissionParams params;
+    MissionData params;
 
     if(!isLoaded())
     {
@@ -494,9 +513,9 @@ MissionParams MissionHandler::getMissionParams()
     return params;
 }
 
-MissionParams MissionHandler::getMissionParams(string name)
+MissionData MissionHandler::getMissionParams(string name)
 {
-    MissionParams params;
+    MissionData params;
 
     if(!isMission(name))
     {
@@ -567,6 +586,23 @@ vector<string> MissionHandler::getStudList(string task_name)
     return studs;
 }
 
+vector<string> MissionHandler::getPendingStuds(string task_name)
+{
+    vector<string> all_studs = getStudList(task_name);
+    vector<string> pending_studs;
+
+    for(int i=0;i<(int)all_studs.size();i++)
+    {
+        //check if stud is pending:
+        int stud_state;
+        ros::param::get(("mission/tasks/" + task_name + "/studs/" + all_studs[i] + "/state"),stud_state);
+        if(stud_state == (int)stud::PENDING)
+            pending_studs.push_back(all_studs[i]);
+    }
+
+    return pending_studs;
+}
+
 bool MissionHandler::addStud(string task_name, double x, double y, string stud_name)
 {
     if(getTaskState(task_name).toUInt() > mission::INSTRUCTED || getTaskState(task_name).toUInt() < mission::CONFIGURED)
@@ -612,7 +648,8 @@ bool MissionHandler::setStudState(string task_name, string stud_name, stud::stat
         return false;
     }
 
-    ros::param::set(("/mission/tasks/" + task_name + "/studs/" + stud_name + "/state"), state);
+    ros::param::set(("/mission/tasks/" + task_name + "/studs/" + stud_name + "/state"), (int)state);
+    ros::param::set(("/mission/tasks/" + task_name + "/studs/" + stud_name + "/time_stamp"), ros::Time::now().toSec());
 
     updateTaskState(task_name);
     updateMissionState();
@@ -649,17 +686,29 @@ bool MissionHandler::updateMissionState()
         return true;
     }
 
+    //sort the list of states, so that the lowest state is first:
     sort(states.begin(),states.end());
 
+    //set the state to the lowest state:
     state = states.front();
 
-    //now see if one or more are of higher state;
-    for(int i=0;i<(int)states.size();i++)
+    /* Now, if the depending on the current state, if
+     * there is a higher state, the task could potentially
+     * be of 1 higher state. E.G state = instructed, but there
+     * is at least one task of state completed or partially completed
+     * In general, if the state if NOT partially_XXX, there is an option
+     * to be one state  higher. Sounds complicated, but I got it (at least)
+     */
+
+    if(state == mission::CONFIGURED || state == mission::INSTRUCTED)
     {
-        if(states[i] > state)
+        for(int i=0;i<(int)states.size();i++)
         {
-            state = (mission::states)((int)state + 1);
-            break;
+            if(states[i] > state)
+            {
+                state = (mission::states)((int)state + 1);
+                break;
+            }
         }
     }
 
@@ -748,6 +797,26 @@ bool MissionHandler::updateTaskState(string task_name)
     return true;
 }
 
+bool MissionHandler::deleteTask(string task_name)
+{
+    //check if a task_name is supplied:
+    if(task_name == "")
+    {
+        ROS_ERROR("Cannot delete task. No task name provided");
+        return false;
+    }
+
+    //check if task_name is valid:
+    if(!MissionHandler::getInstance()->isTask(task_name))
+    {
+        ROS_ERROR_STREAM("Cannot delete task " << task_name << ". Not a valid task");
+        return false;
+    }
+
+    //delete the task:
+    return ros::param::del(("mission/tasks/" + task_name));
+}
+
 string MissionHandler::getStoragePath()
 {
     return (ros::package::getPath("mission_control") +"/mission_library");
@@ -764,4 +833,36 @@ string NavGoal::toString(bool verbose)
         ss << "x: " << x << " y: " << y << " yaw: " << yaw;
 
     return ss.str();
+}
+
+
+mission_control::MissionData MissionData::toMsg() const
+{
+    mission_control::MissionData data;
+    data.name = this->name;
+    data.description = this->description;
+    data.cad = this->CAD_ref;
+    data.last_saved = this->last_saved;
+    data.number_of_tasks = this->number_of_tasks;
+    data.state = this->state.toUInt();
+    data.state_description = this->state.toString();
+
+    return data;
+}
+
+
+mission_control::TaskData TaskData::toMsg() const
+{
+    mission_control::TaskData data;
+
+    data.nav_goal.x = this->navigation_goal.x;
+    data.nav_goal.y = this->navigation_goal.y;
+    data.nav_goal.yaw = this->navigation_goal.yaw;
+    data.number_of_studs = (int)this->studs.size();
+    data.state = this->state.toUInt();
+    data.state_description = this->state.toString();
+    data.stud_type = this->stud_type;
+    data.stud_pattern = this->stud_pattern;
+
+    return data;
 }

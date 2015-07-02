@@ -49,9 +49,9 @@
 #include "ros/service_client.h"
 #include "mission_control/Trigger.h"
 #include "mission_control/getMissionList.h"
-#include "mission_control/getMissionMetaData.h"
+#include "mission_control/getMissionData.h"
 #include "mission_control/getTaskList.h"
-#include "mission_control/getTaskParams.h"
+#include "mission_control/getTaskData.h"
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
 #include "ros_interface.hpp"
@@ -374,7 +374,7 @@ void MainWindow::on_taskList_clicked(const QModelIndex &index)
 {
     //    string task = index.data().toString().toStdString();
 
-    //    TaskParams params = mh_->getTaskParams(task);
+    //    TaskParams params = mh_->getTaskData(task);
 
     //    ui->task_name_label->setText(QString::fromStdString(params.name));
     //    ui->stud_type_label->setText(QString::fromStdString(params.stud_type));
@@ -389,26 +389,26 @@ void MainWindow::on_taskList_selection_changed(const QModelIndex &index, const Q
 {
     string task = index.data().toString().toStdString();
 
-    mission_control::getTaskParams srv;
+    mission_control::getTaskData srv;
     srv.request.name = task;
-    ros::ServiceClient client = n.serviceClient<mission_control::getTaskParams>(UIAPI_GET_TASK_PARAMS);
+    ros::ServiceClient client = n.serviceClient<mission_control::getTaskData>(UIAPI_GET_TASK_DATA);
     if(!client.call(srv))
     {
         return;
     }
 
-    ui->task_name_label->setText(QString::fromStdString(srv.response.name));
-    ui->stud_type_label->setText(QString::fromStdString(srv.response.stud_type));
-    ui->stud_distribution_label->setText(QString::fromStdString(srv.response.stud_pattern.distribution));
-    ui->stud_dist_label->setText(QString::number(srv.response.stud_pattern.distance));
-    ui->stud_proximity_label->setText(QString::number(srv.response.stud_pattern.proximity));
+    ui->task_name_label->setText(QString::fromStdString(task));
+    ui->stud_type_label->setText(QString::fromStdString(srv.response.data.stud_type));
+    ui->stud_distribution_label->setText(QString::fromStdString(srv.response.data.stud_pattern.distribution));
+    ui->stud_dist_label->setText(QString::number(srv.response.data.stud_pattern.distance));
+    ui->stud_proximity_label->setText(QString::number(srv.response.data.stud_pattern.proximity));
 
     stringstream ss;
-    ss << "x: " << srv.response.nav_goal.x << " y: " << srv.response.nav_goal.y << " yaw: " << srv.response.nav_goal.yaw;
+    ss << "x: " << srv.response.data.nav_goal.x << " y: " << srv.response.data.nav_goal.y << " yaw: " << srv.response.data.nav_goal.yaw;
 
     ui->nav_goal_label->setText(QString::fromStdString( ss.str() ));
-    ui->number_of_studs_label->setText(QString::number(srv.response.number_of_studs));
-    ui->task_state->setText(QString::fromStdString(srv.response.state));
+    ui->number_of_studs_label->setText(QString::number(srv.response.data.number_of_studs));
+    ui->task_state->setText(QString::fromStdString(srv.response.data.state_description));
 
     showTaskParams();
 }
@@ -444,7 +444,7 @@ void MainWindow::updateTaskList()
         showTaskParams();
 }
 
-void MainWindow::updateMissionMeta()
+void MainWindow::updateMissionData()
 {
     mission_control::Trigger srv;
     ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_GET_MISSION_NAME);
@@ -463,21 +463,21 @@ void MainWindow::updateMissionMeta()
         return;
     }
 
-    mission_control::getMissionMetaData srv2;
-    ros::ServiceClient client2 = n.serviceClient<mission_control::getMissionMetaData>(UIAPI_GET_MISSION_META);
+    mission_control::getMissionData srv2;
+    ros::ServiceClient client2 = n.serviceClient<mission_control::getMissionData>(UIAPI_GET_MISSION_DATA);
     if(!client2.call(srv2))
     {
         return;
     }
 
-    ui->mission_name->setText(QString::fromStdString(srv2.response.name));
-    ui->cad_ref->setText(QString::fromStdString(srv2.response.cad));
-    ui->mission_state->setText(QString::fromStdString(srv2.response.state_description));
+    ui->mission_name->setText(QString::fromStdString(srv2.response.data.name));
+    ui->cad_ref->setText(QString::fromStdString(srv2.response.data.cad));
+    ui->mission_state->setText(QString::fromStdString(srv2.response.data.state_description));
 }
 
 void MainWindow::updateInfo()
 {
-    updateMissionMeta();
+    updateMissionData();
     updateTaskList();
 
 }
@@ -505,98 +505,6 @@ void MainWindow::showTaskParams()
     ui->number_of_studs_label->show();
     ui->task_state->show();
 }
-
-/*
-void MainWindow::hwStateCB(const mission_control::HardwareStates::ConstPtr &msg)
-{
-    //update state labels in bottom of window
-    ui->robot_state_label->setText(QString::fromStdString(msg->hardware_states[0].device_state));
-    ui->platform_state_label->setText(QString::fromStdString(msg->hardware_states[1].device_state));
-    ui->arm_state_label->setText(QString::fromStdString(msg->hardware_states[2].device_state));
-    ui->system_state_label->setText(QString::fromStdString(msg->hardware_states[3].device_state));
-}
-
-void MainWindow::execProgressCB(const mission_control::Progress::ConstPtr &msg)
-{
-    //emit exec_progress_update_received(msg);
-
-    on_execProgressUpdate(msg);
-}
-
-void MainWindow::instrProgressCB(const mission_control::Progress::ConstPtr &msg)
-{
-    //unhide the execution status and description labels:
-    ui->instr_status_label->show();
-    ui->instr_descrp_label->show();
-
-    //update the exection status and description:
-    ui->instr_status_label->setText(QString::fromStdString(msg->engine_state));
-    ui->instr_descrp_label->setText(QString::fromStdString(msg->description));
-    ui->mission_name->setText(QString::fromStdString(msg->current_mission));
-
-    //update the task list (color the current task)
-    for(int i=0;i<task_list_model->rowCount();i++)
-    {
-        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString().toStdString() == msg->current_task)
-            task_list_model->setData(task_list_model->index(i,0),Qt::red,Qt::ForegroundRole);
-        else
-            task_list_model->setData(task_list_model->index(i,0),Qt::black,Qt::ForegroundRole);
-    }
-
-    //update the enabled buttons:
-    //start:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_START)
-        {
-            ui->instrStartButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //pause:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_PAUSE)
-        {
-            ui->instrPauseButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //abort:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_ABORT)
-        {
-            ui->instrStopButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //retry:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_RETRY)
-        {
-            ui->instrRetryButton->setEnabled(msg->enabled_functions[i].enabled);
-            break;
-        }
-    }
-
-    //skipTask:
-    for(int i=0;i<(int)msg->enabled_functions.size();i++)
-    {
-        if(msg->enabled_functions[i].name == INSTR_SKIP_TASK)
-        {
-            ui->instrSkipTaskButton->setEnabled(msg->enabled_functions[i].enabled);
-        }
-    }
-
-    //update the meta info:
-    updateMissionMeta();
-}
-*/
 
 void MainWindow::on_execStartButton_clicked()
 {
@@ -883,5 +791,5 @@ void MainWindow::instrProgressUpdate(const mission_control::Progress::ConstPtr &
     }
 
     //update the meta info:
-    updateMissionMeta();
+    updateMissionData();
 }

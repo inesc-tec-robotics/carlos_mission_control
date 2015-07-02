@@ -14,6 +14,8 @@
 #include <vector>
 #include "boost/assign.hpp"
 #include "mission_ctrl_msgs/mission_ctrl_defines.h"
+#include "mission_control/MissionData.h"
+#include "mission_control/TaskData.h"
 
 namespace mission
 {
@@ -98,33 +100,28 @@ struct NavGoal
     double yaw;
 };
 
-struct StudPattern  //could be replaced by StudPattern.msg - yet here we could add functions.
+struct TaskData
 {
-    std::string distribution;
-    double distance;
-    double proximity;
-    double force;
-};
+    mission_control::TaskData toMsg() const;
 
-struct TaskParams
-{
     std::string name;
     mission::state state;   //for now we adopt the same definition as for a mission
     std::string stud_type;
-    StudPattern stud_pattern;
+    mission_control::StudPattern stud_pattern;
     NavGoal navigation_goal;
     std::vector<StudPosition> studs;
 };
 
-struct MissionParams
+struct MissionData
 {
+    mission_control::MissionData toMsg() const;
+
     std::string name;
     std::string CAD_ref;
     std::string description;
     int number_of_tasks;
     double last_saved;
     mission::state state;
-
 };
 
 class MissionHandler
@@ -155,6 +152,8 @@ public:
 
     bool isMission(std::string name);
 
+    bool isTask(std::string task_name);
+
     //get state of mission
     mission::state getState();
     mission::state getState(std::string name);
@@ -163,24 +162,25 @@ public:
     mission::state getTaskState(int index);
 
     std::vector<std::string> getTaskList();
-
     std::vector<std::string> getExecutableTasks();
     std::vector<std::string> getInstructableTasks();
 
-    TaskParams getTaskParams(std::string task_name);
-    TaskParams getTaskParams(int index);
+    TaskData getTaskData(std::string task_name);
+    TaskData getTaskData(int index);
 
-    MissionParams getMissionParams();
-    MissionParams getMissionParams(std::string name);
+    MissionData getMissionParams();
+    MissionData getMissionParams(std::string name);
 
     std::vector<std::string> getStudList(std::string task_name);
+    std::vector<std::string> getPendingStuds(std::string task_name);
 
     bool addStud(std::string task_name, double x, double y, std::string stud_name = "auto_generate");
     bool setStudState(std::string task_name, std::string stud_name, stud::states state);
-
     bool updateMissionState();
-
     bool updateTaskState(std::string task_name);
+
+    //bool setMissionData()
+    bool deleteTask(std::string task_name);
 
 private:
 

@@ -30,11 +30,11 @@ UiAPI::UiAPI()
     save_mission_srv_ = n.advertiseService(UIAPI_SAVE_MISSION, &UiAPI::saveMissionCB, this);
     save_mission_as_srv_ = n.advertiseService(UIAPI_SAVE_MISSION_AS, &UiAPI::saveMissionAsCB, this);
     create_new_mission_srv_ = n.advertiseService(UIAPI_CREATE_NEW_MISSION, &UiAPI::createNewMissionCB, this);
-    get_mission_meta_srv_ = n.advertiseService(UIAPI_GET_MISSION_META, &UiAPI::getMissionMetaCB, this);
+    get_mission_data_srv_ = n.advertiseService(UIAPI_GET_MISSION_DATA, &UiAPI::getMissionDataCB, this);
     get_task_list_srv_ = n.advertiseService(UIAPI_GET_TASK_LIST, &UiAPI::getTaskListCB, this);
     get_mission_list_srv_ = n.advertiseService(UIAPI_GET_MISSION_LIST, &UiAPI::getMissionListCB, this);
     get_mission_name_srv_ = n.advertiseService(UIAPI_GET_MISSION_NAME, &UiAPI::getMissionNameCB, this);
-    get_task_params_srv_ = n.advertiseService(UIAPI_GET_TASK_PARAMS, &UiAPI::getTaskParamsCB, this);
+    get_task_data_srv_ = n.advertiseService(UIAPI_GET_TASK_DATA, &UiAPI::getTaskDataCB, this);
     exec_start_srv_ = n.advertiseService(UIAPI_EXEC_START, &UiAPI::execStartCB, this);
     exec_abort_srv_ = n.advertiseService(UIAPI_EXEC_ABORT, &UiAPI::execAbortCB, this);
     exec_pause_srv_ = n.advertiseService(UIAPI_EXEC_PAUSE_RESUME, &UiAPI::execPauseCB, this);
@@ -46,6 +46,13 @@ UiAPI::UiAPI()
     instr_pause_srv_ = n.advertiseService(UIAPI_INSTR_PAUSE_RESUME, &UiAPI::instrPauseCB, this);
     instr_skip_task_srv_ = n.advertiseService(UIAPI_INSTR_SKIP_TASK, &UiAPI::instrSkipTaskCB, this);
     instr_retry_srv_ = n.advertiseService(UIAPI_INSTR_RETRY, &UiAPI::instrRetryCB, this);
+    edit_start_srv_ = n.advertiseService(UIAPI_EDIT_START, &UiAPI::editStartCB, this);
+    edit_stop_srv_ = n.advertiseService(UIAPI_EDIT_STOP, &UiAPI::editStopCB, this);
+    set_mission_data_srv_ = n.advertiseService(UIAPI_SET_MISSION_DATA, &UiAPI::setMissionDataCB, this);
+    set_task_data_srv_ = n.advertiseService(UIAPI_SET_TASK_DATA, &UiAPI::setTaskDataCB, this);
+    add_task_data_srv_ = n.advertiseService(UIAPI_ADD_TASK, &UiAPI::addTaskCB, this);
+    delete_task_srv_ = n.advertiseService(UIAPI_DELETE_TASK, &UiAPI::deleteTaskCB, this);
+
 
     ROS_INFO("ROS ServiceServers for UI API started");
 
@@ -117,11 +124,20 @@ bool UiAPI::loadMissionCB(mission_control::Trigger::Request &request, mission_co
 {
     ROS_DEBUG_STREAM("loadMissionCB - name: " << request.input);
     if(!MissionHandler::getInstance()->isMission(request.input))
-        return false;
+    {
+        response.success = false;
+        response.message = request.input + " is not a valid mission";
+        return true;
+    }
 
     if(!MissionHandler::getInstance()->load(request.input))
-        return false;
+    {
+        response.success = false;
+        response.message = "Load failed";
+        return true;
+    }
 
+    response.success = true;
     return true;
 }
 
@@ -144,44 +160,51 @@ bool UiAPI::saveMissionAsCB(mission_control::Trigger::Request &request, mission_
 {
     ROS_DEBUG_STREAM("saveMissionAsCB - name: " << request.input);
     if(!MissionHandler::getInstance()->isLoaded())
-        return false;
+    {
+        response.success = false;
+        response.message = "No name given for save as";
+        return true;
+    }
 
     if(!MissionHandler::getInstance()->saveAs(request.input))
-        return false;
+    {
+        response.success = false;
+        response.message = "Save as failed";
+        return true;
+    }
 
     return true;
 }
 
-bool UiAPI::getMissionMetaCB(mission_control::getMissionMetaData::Request &request, mission_control::getMissionMetaData::Response &response)
+bool UiAPI::getMissionDataCB(mission_control::getMissionData::Request &request, mission_control::getMissionData::Response &response)
 {
     ROS_DEBUG_STREAM("getMissionMetaCB - name: " << request.name);
 
-    MissionParams params;
+    MissionData data;
 
     if(request.name == "")  //hence request for currently loaded:
     {
         if(!MissionHandler::getInstance()->isLoaded())
         {
-            return false;
+            response.success = false;
+            response.message = "No mission loaded";
+            return true;
         }
-        params = MissionHandler::getInstance()->getMissionParams();
+        data = MissionHandler::getInstance()->getMissionParams();
     }
     else
     {
         if(!MissionHandler::getInstance()->isMission(request.name))
         {
-            return false;
+            response.success = false;
+            response.message = request.name + " is not a valid mission";
+            return true;
         }
-        params = MissionHandler::getInstance()->getMissionParams(request.name);
+        data = MissionHandler::getInstance()->getMissionParams(request.name);
     }
 
-    response.cad = params.CAD_ref;
-    response.name = params.name;
-    response.description = params.description;
-    response.last_saved = params.last_saved;
-    response.number_of_tasks = params.number_of_tasks;
-    response.state = params.state.toUInt();
-    response.state_description = params.state.toString();
+    response.data = data.toMsg();
+    response.success = true;
 
     return true;
 }
@@ -196,28 +219,19 @@ bool UiAPI::getMissionNameCB(mission_control::Trigger::Request &request, mission
     return true;
 }
 
-bool UiAPI::getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response)
+bool UiAPI::getTaskDataCB(mission_control::getTaskData::Request &request, mission_control::getTaskData::Response &response)
 {
 
-    TaskParams params = MissionHandler::getInstance()->getTaskParams(request.name);
+    TaskData data = MissionHandler::getInstance()->getTaskData(request.name);
 
-    if(response.name == params.name)
+    if(request.name != data.name)
     {
         response.success = false;
-        return false;
+        response.message = "Inconsistent name of task. Should not happen!";
+        return true;
     }
 
-    response.name = params.name;
-    response.state = params.state.toString();
-    response.number_of_studs = params.studs.size();
-    response.nav_goal.x = params.navigation_goal.x;
-    response.nav_goal.y = params.navigation_goal.y;
-    response.nav_goal.yaw = params.navigation_goal.yaw;
-    response.stud_type = params.stud_type;
-    response.stud_pattern.distance = params.stud_pattern.distance;
-    response.stud_pattern.proximity = params.stud_pattern.proximity;
-    response.stud_pattern.press = params.stud_pattern.force;
-    response.stud_pattern.distribution = params.stud_pattern.distribution;
+    response.data = data.toMsg();
     response.success = true;
 
     return true;
@@ -262,6 +276,7 @@ bool UiAPI::execStartCB(mission_control::Trigger::Request &request, mission_cont
         {
             response.success = false;
             response.message = "Mission requested does not exist.";
+            return true;
         }
     }
 
@@ -326,6 +341,7 @@ bool UiAPI::instrStartCB(mission_control::Trigger::Request &request, mission_con
         {
             response.success = false;
             response.message = "Mission requested does not exist.";
+            return true;
         }
     }
 
@@ -368,6 +384,55 @@ bool UiAPI::instrRetryCB(mission_control::Trigger::Request &request, mission_con
     response.success = InstructionEngine::getInstance()->retry();
 
     return true;
+}
+
+bool UiAPI::editStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    ROS_DEBUG_STREAM("editStartCB - name: " << request.input);
+
+    if(request.input != "" && request.input != MissionHandler::getInstance()->getLoadedName())
+    {
+        //load the mission:
+        if(!MissionHandler::getInstance()->load(request.input));
+        {
+            response.success = false;
+            response.message = "Mission requested does not exist.";
+            return true;
+        }
+    }
+
+    response.success = SystemEngine::getInstance()->edit();
+
+    return true;
+}
+
+bool UiAPI::editStopCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    ROS_DEBUG_STREAM("editStopCB");
+
+    response.success = SystemEngine::getInstance()->editDone();
+
+    return true;
+}
+
+bool UiAPI::setMissionDataCB(mission_control::setMissionData::Request &request, mission_control::setMissionData::Response &response)
+{
+
+}
+
+bool UiAPI::setTaskDataCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response)
+{
+
+}
+
+bool UiAPI::addTaskCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response)
+{
+
+}
+
+bool UiAPI::deleteTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    return MissionHandler::getInstance()->deleteTask(request.input);
 }
 
 

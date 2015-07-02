@@ -12,6 +12,7 @@
 #include "mission_ctrl_msgs/performTeachingAction.h"
 #include "mission_ctrl_msgs/mission_ctrl_defines.h"
 #include "mission_ctrl_msgs/hardware_state.h"
+#include "text_color_defines.h"
 
 
 using namespace std;
@@ -23,7 +24,9 @@ void teachActionCB(const mission_ctrl_msgs::performTeachingGoalConstPtr& goal)
 {
     mission_ctrl_msgs::performTeachingResult result;
 
-    cout << "Please select outcome: " << endl;
+    cout << BOLDWHITE << "-----------------------------------------" << endl;
+    cout << BOLDGREEN << "Prodisp emulator - Teaching" << endl;
+    cout << BOLDWHITE << "-----------------------------------------" << RESET << endl << endl;
 
     while(true)
     {

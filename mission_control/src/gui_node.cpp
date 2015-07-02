@@ -29,12 +29,9 @@ int main(int argc, char * argv[])
     QObject::connect(&ros_interface, SIGNAL(instr_progress_update_received(const mission_control::Progress::ConstPtr&)), &w, SLOT(instrProgressUpdate(const mission_control::Progress::ConstPtr&)));
     QObject::connect(&ros_interface, SIGNAL(hw_states_received(mission_control::HardwareStates)), &w, SLOT(hwStateUpdate(mission_control::HardwareStates)));
 
-
     ros_interface.start();
     w.show();
 
-    //    ros::AsyncSpinner spinner(1);
-    //    spinner.start();
     a.exec();
 
     return 0;

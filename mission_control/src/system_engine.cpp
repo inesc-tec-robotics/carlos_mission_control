@@ -284,6 +284,11 @@ bool SystemEngine::assist()
     return(ssm_->process_event(assist_start_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
+bool SystemEngine::edit()
+{
+
+}
+
 void SystemEngine::executeDone()
 {
     ssm_->process_event(exec_done_e());
@@ -297,6 +302,11 @@ void SystemEngine::instructDone()
 void SystemEngine::assistDone()
 {
     ssm_->process_event(assist_done_e());
+}
+
+bool SystemEngine::editDone()
+{
+
 }
 
 void SystemEngine::lockMissionHandler()

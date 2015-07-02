@@ -53,6 +53,7 @@ struct mani_done_e {};
 struct nav_fail_e {};
 struct weld_fail_e
 {
+    //content of event no longer needed - but will remain until development concludes!
     weld_fail_e() : stud_name_("none"){}
     weld_fail_e(string stud_name) : stud_name_(stud_name){}
     string stud_name_;
@@ -113,7 +114,7 @@ struct weld_error_s : public msm::front::state<>
 
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const& event,FSM& )
+    void on_entry(Event const& ,FSM& )
     {
         ExecutionEngine::getInstance()->current_state_ = ExecState::WELD_ERROR;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
@@ -123,7 +124,9 @@ struct weld_error_s : public msm::front::state<>
                                                             (EXEC_SKIP_STUD) );
         ExecutionEngine::getInstance()->sendProgressUpdate();
 
-        failed_stud_name_ = event.stud_name_;
+        //storing the name of the failed stud in the state.
+        //This way, we can reset the ExecutionEngine variable on exit of this state.
+        failed_stud_name_ = ExecutionEngine::getInstance()->failed_stud_;
 
         ROS_DEBUG("Execution engine entering weld error state");
         ROS_INFO_STREAM("Welding error in task " << ExecutionEngine::getInstance()->getCurrentTask() << " for stud " << failed_stud_name_);
@@ -132,6 +135,9 @@ struct weld_error_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
+        //set the "failed stud" variable to none:
+        ExecutionEngine::getInstance()->failed_stud_ = "none";
+
         ROS_DEBUG("Execution engine leaving weld error state");
         ROS_INFO("Welding error resolved");
     }
@@ -176,7 +182,7 @@ struct nav_s : public msm::front::state<>
         ROS_INFO_STREAM("Navigating to task " << ExecutionEngine::getInstance()->getCurrentTask() << ".");
 
         //get goal data:
-        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(ExecutionEngine::getInstance()->getCurrentTask());
+        TaskData task_params = MissionHandler::getInstance()->getTaskData(ExecutionEngine::getInstance()->getCurrentTask());
 
         //create goal:
         mission_ctrl_msgs::movePlatformGoal goal;
@@ -374,6 +380,17 @@ struct mission_executable_g
             return false;
     }
 };
+struct has_pending_studs_g
+{
+    template <class FSM,class EVT,class SourceState,class TargetState>
+    bool operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+    {
+        if(MissionHandler::getInstance()->getPendingStuds(ExecutionEngine::getInstance()->getCurrentTask()).size() < 1)
+            return false;
+        else
+            return true;
+    }
+};
 
 // front-end: define the FSM structure
 struct ExecutionStateMachine_ : public msm::front::state_machine_def<ExecutionStateMachine_>
@@ -414,7 +431,9 @@ struct ExecutionStateMachine_ : public msm::front::state_machine_def<ExecutionSt
             Row < mani_s,               hw_fail_e,          hw_error_s,     none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < weld_error_s,         retry_e,            mani_s,         reset_stud_a,               hw_idle_g           >,
-            Row < weld_error_s,         skip_stud_e,        mani_s,         none,                       hw_idle_g           >,
+            Row < weld_error_s,         skip_stud_e,        stopped_s,      none,                       none                >,                  //no more studs in task and no more tasks
+            Row < weld_error_s,         skip_stud_e,        nav_s,          increment_task_a,           And_<hw_idle_g,more_tasks_g> >,         //no more pending studs in task - go to next task
+            Row < weld_error_s,         skip_stud_e,        mani_s,         none,                       And_<hw_idle_g, has_pending_studs_g> >, //there are still pending studs
             Row < weld_error_s,         skip_task_e,        stopped_s,      none,                       Not_<more_tasks_g>  >,
             Row < weld_error_s,         skip_task_e,        nav_s,          increment_task_a,           more_tasks_g        >, //jump to next task is more exists
             Row < weld_error_s,         abort_e,            stopped_s,      none,                       none                >,
@@ -521,9 +540,12 @@ void ExecutionEngine::maniActive()
 {
 }
 
-void ExecutionEngine::maniFeedback()
+void ExecutionEngine::maniFeedback(string stud, bool success)
 {
     //send signal to UIAPI that there is an update:
+    if(!success)
+        failed_stud_ = stud;
+
     sendProgressUpdate();
 }
 

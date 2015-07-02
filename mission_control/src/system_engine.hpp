@@ -81,10 +81,12 @@ public:
     bool execute();
     bool instruct();
     bool assist();
+    bool edit();
 
     void executeDone();
     void instructDone();
     void assistDone();
+    bool editDone();
 
     void lockMissionHandler();
     void unlockMissionHandler();

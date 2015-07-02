@@ -195,11 +195,9 @@ void ActionInterface::platformFinishedCB(const actionlib::SimpleClientGoalState 
     {
     case actionlib::SimpleClientGoalState::SUCCEEDED:
         if(ee_)
-        {cout << "ee ttrue" << endl;
-            ee_->navDone();}
+            ee_->navDone();
         if(ie_)
-        { cout << "ie ttrue" << endl;
-            ie_->navDone();}
+            ie_->navDone();
         break;
     case actionlib::SimpleClientGoalState::PREEMPTED:
         if(ee_)
@@ -272,7 +270,7 @@ void ActionInterface::armFeedbackCB(const mission_ctrl_msgs::executeWeldFeedback
 {
     ROS_INFO_STREAM("Received feedback from arm");
     MissionHandler::getInstance()->setStudState(ee_->getCurrentTask(),feedback->stud_id,(feedback->stud_state ? stud::SUCCEEDED : stud::FAILED)); //ain't complex code just a beauty?!
-    ee_->maniFeedback();
+    ee_->maniFeedback(feedback->stud_id,feedback->stud_state);
 }
 
 void ActionInterface::teachFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::performTeachingResultConstPtr &result)
@@ -311,7 +309,6 @@ void ActionInterface::genPosFinishedCB(const actionlib::SimpleClientGoalState &s
     switch(state.state_)
     {
     case actionlib::SimpleClientGoalState::SUCCEEDED:
-        cout << "length of vector received: " << result->positions.size() << endl;
         ie_->genPosDone(result->positions);
         break;
     case actionlib::SimpleClientGoalState::PREEMPTED:

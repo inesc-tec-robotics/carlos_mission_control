@@ -1,0 +1,5 @@
+string name
+---
+bool success
+string message
+mission_control/MissionData data

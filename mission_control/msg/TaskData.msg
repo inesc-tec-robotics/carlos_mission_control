@@ -1,0 +1,6 @@
+uint8 state
+string state_description
+int16 number_of_studs
+string stud_type
+mission_control/StudPattern stud_pattern
+mission_control/NavGoal nav_goal

@@ -100,16 +100,20 @@ include_directories(${QT_INCLUDE_DIR})
    Progress.msg
    NavGoal.msg
    StudPattern.msg
+   TaskData.msg
+   MissionData.msg
  )
 
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
+   Trigger.srv
    getTaskList.srv
    getMissionList.srv
-   getMissionMetaData.srv
-   Trigger.srv
-   getTaskParams.srv
+   getMissionData.srv
+   getTaskData.srv
+   setTaskData.srv
+   setMissionData.srv
  )
 
 ## Generate actions in the 'action' folder

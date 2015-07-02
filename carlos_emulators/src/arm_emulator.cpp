@@ -1,4 +1,3 @@
-
 //
 //  main.cpp
 //
@@ -13,6 +12,7 @@
 #include "mission_ctrl_msgs/hardware_state.h"
 #include "mission_ctrl_msgs/executeWeldAction.h"
 #include "mission_ctrl_msgs/generateStudDistributionAction.h"
+#include "text_color_defines.h"
 
 #define WALL_HEIGHT 0.4  //2.5
 #define WALL_WIDTH 0.4  //0.7
@@ -66,16 +66,89 @@ vector<geometry_msgs::Point> genStudPositions(string task_name)
     return stud_positions;
 }
 
+void weldAllStuds(string task_name, int fail=-1)
+{
+    //get the stud list:
+    XmlRpc::XmlRpcValue data;
+    if(!ros::param::get(("mission/tasks/" + task_name + "/studs"), data))
+    {
+        ROS_WARN_STREAM("No studs in task: " << task_name);
+        return;
+    }
+
+    //now process the studs:
+    int i=0;
+    for(XmlRpc::XmlRpcValue::iterator it = data.begin(); it != data.end(); it++)
+    {
+        //check if stud is pending:
+        int stud_state;
+        ros::param::get(("mission/tasks/" + task_name + "/studs/" + it->first + "/state"),stud_state);
+        if(stud_state != (int)stud::PENDING)
+            continue;                           //we don't increment i, because the "fail" is set according to "pending" studs
+
+        mission_ctrl_msgs::executeWeldFeedback feedback;
+        feedback.stud_id = it->first;
+
+        feedback.stud_state = (i == fail ? false : true);
+        weld_server_->publishFeedback(feedback);
+
+        if(i == fail)
+            return;
+        i++;
+
+        usleep(300000); //...otherwise feedback messages get lost!
+    }
+}
+
+int selectFailStud(string task_name)
+{
+    //called if user has chosen "fail". The user must now choose which stud should fail:
+    XmlRpc::XmlRpcValue data;
+    if(!ros::param::get(("mission/tasks/" + task_name + "/studs"), data))
+    {
+        ROS_WARN_STREAM("No studs in task: " << task_name);
+        return -1;
+    }
+
+    int pending_studs = 0;
+    for(XmlRpc::XmlRpcValue::iterator it = data.begin(); it != data.end(); it++)
+    {
+        int stud_state;
+        ros::param::get(("mission/tasks/" + task_name + "/studs/" + it->first + "/state"),stud_state);
+        if(stud_state == (int)stud::PENDING)
+            pending_studs++;
+    }
+
+    while(true)
+    {
+        int input;
+        cout << "Task: " << task_name << " contains " << pending_studs << " pending studs. Which stud should fail? [1-" <<pending_studs<<"]" << endl;
+        cout << endl;
+        cout << "choice: ";
+        cin >> input;
+
+        if(input < 1 || input >pending_studs)
+        {
+            cout << "invalid choice, try again..." << endl << endl;
+        }
+        else
+        {
+            return input-1;
+        }
+    }
+
+    return 0;
+}
+
 void weldActionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
 {
 
     state_ = hardware::BUSY;
 
     mission_ctrl_msgs::executeWeldResult result;
-
-    ROS_INFO_STREAM("Received a weld task goal - task: " << goal->task_name);
-
-    cout << "Please select outcome: " << endl;
+    cout << BOLDWHITE << "-----------------------------------------" << endl;
+    cout << BOLDGREEN << "Arm emulator - Welding" << endl;
+    cout << BOLDWHITE << "-----------------------------------------" << RESET << endl << endl;
 
     while(true)
     {
@@ -90,13 +163,16 @@ void weldActionCB(const mission_ctrl_msgs::executeWeldGoalConstPtr& goal)
 
         if(input == "0")
         {
-            result.result_state = true;
+            weldAllStuds(goal->task_name);
+                      result.result_state = true;
             weld_server_->setSucceeded(result);
             state_ = hardware::IDLE;
             return;
         }
         else if(input == "1")
         {
+            int fail_stud = selectFailStud(goal->task_name);
+            weldAllStuds(goal->task_name, fail_stud);
             result.result_state = false;
             result.error_string = "welding task failed";
             weld_server_->setAborted(result);
@@ -125,7 +201,11 @@ void genStudActionCB(const mission_ctrl_msgs::generateStudDistributionGoalConstP
 
     mission_ctrl_msgs::generateStudDistributionResult result;
 
-    ROS_INFO_STREAM("Received a generate stud distribution goal - task: " << goal->task_name);
+    ROS_DEBUG_STREAM("Received a generate stud distribution goal - task: " << goal->task_name);
+
+    cout << BOLDWHITE << "-----------------------------------------" << endl;
+    cout << BOLDGREEN << "Arm emulator - Generate Stud Positions" << endl;
+    cout << BOLDWHITE << "-----------------------------------------" << RESET << endl << endl;
 
     if(!ros::param::has(("mission/tasks/" + goal->task_name)))
     {
@@ -134,9 +214,6 @@ void genStudActionCB(const mission_ctrl_msgs::generateStudDistributionGoalConstP
         state_ = hardware::IDLE;
         return;
     }
-
-
-    cout << "Please select outcome: " << endl;
 
     while(true)
     {
@@ -158,7 +235,7 @@ void genStudActionCB(const mission_ctrl_msgs::generateStudDistributionGoalConstP
         }
         else if(input == "1")
         {
-            result.error_string = "failed to generate stud positions";
+             result.error_string = "failed to generate stud positions";
             gen_pos_server_->setAborted(result);
             state_ = hardware::IDLE;
             return;

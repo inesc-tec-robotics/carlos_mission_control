@@ -129,7 +129,7 @@ struct nav_s : public msm::front::state<>
         ROS_INFO_STREAM("Navigating to task " << InstructionEngine::getInstance()->getCurrentTask() << ".");
 
         //get goal data:
-        TaskParams task_params = MissionHandler::getInstance()->getTaskParams(InstructionEngine::getInstance()->getCurrentTask());
+        TaskData task_params = MissionHandler::getInstance()->getTaskData(InstructionEngine::getInstance()->getCurrentTask());
 
         //create goal:
         mission_ctrl_msgs::movePlatformGoal goal;

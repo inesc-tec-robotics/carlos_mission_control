@@ -1,6 +1,4 @@
 string name
----
-string name
 string cad
 string description
 int16 number_of_tasks

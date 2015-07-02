@@ -114,6 +114,9 @@ public:
     //action client interface:
     ActionInterface* aci_;
 
+    //local variable to hold the name of the failed stud. Not a pretty solution, but for now - the fastest!
+    std::string failed_stud_;
+
 private:
 
     struct ExecStateMachine;
@@ -131,7 +134,7 @@ private:
     void maniDone();
     void maniFailed();
     void maniActive();
-    void maniFeedback();
+    void maniFeedback(std::string stud, bool success);
     void navDone();
     void navFailed();
     void navActive();

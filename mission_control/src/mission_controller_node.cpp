@@ -55,7 +55,9 @@ int main(int argc, char * argv[])
 
     ROS_INFO("mission_controller running...");
 
-    ros::spin();
+    ros::AsyncSpinner spinner(2);
+    spinner.start();
+
     ros::waitForShutdown();
 
     return 0;

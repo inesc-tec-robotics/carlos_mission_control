@@ -114,7 +114,7 @@ private:
 
     void updateTaskList();
 
-    void updateMissionMeta();
+    void updateMissionData();
 
     void updateInfo();
 
