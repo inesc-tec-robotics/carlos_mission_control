@@ -123,6 +123,15 @@ bool UiAPI::getMissionListCB(mission_control::getMissionList::Request &request, 
 bool UiAPI::loadMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_DEBUG_STREAM("loadMissionCB - name: " << request.input);
+
+    //check with system engine, if the mission is locked!
+    if(SystemEngine::getInstance()->isMissionLocked())
+    {
+        response.success = false;
+        response.message = "Mission currently locked";
+        return true;
+    }
+
     if(!MissionHandler::getInstance()->isMission(request.input))
     {
         response.success = false;
@@ -159,6 +168,15 @@ bool UiAPI::saveMissionCB(mission_control::Trigger::Request &request, mission_co
 bool UiAPI::saveMissionAsCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_DEBUG_STREAM("saveMissionAsCB - name: " << request.input);
+
+    //check with system engine, if the mission is locked!
+    if(SystemEngine::getInstance()->isMissionLocked())
+    {
+        response.success = false;
+        response.message = "Mission currently locked";
+        return true;
+    }
+
     if(!MissionHandler::getInstance()->isLoaded())
     {
         response.success = false;
@@ -190,7 +208,7 @@ bool UiAPI::getMissionDataCB(mission_control::getMissionData::Request &request, 
             response.message = "No mission loaded";
             return true;
         }
-        data = MissionHandler::getInstance()->getMissionParams();
+        data = MissionHandler::getInstance()->getMissionData();
     }
     else
     {
@@ -200,7 +218,7 @@ bool UiAPI::getMissionDataCB(mission_control::getMissionData::Request &request, 
             response.message = request.name + " is not a valid mission";
             return true;
         }
-        data = MissionHandler::getInstance()->getMissionParams(request.name);
+        data = MissionHandler::getInstance()->getMissionData(request.name);
     }
 
     response.data = data.toMsg();
@@ -240,6 +258,14 @@ bool UiAPI::getTaskDataCB(mission_control::getTaskData::Request &request, missio
 bool UiAPI::createNewMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_DEBUG_STREAM("createNewMissionCB - name: " << request.input);
+
+    //check with system engine, if the mission is locked!
+    if(SystemEngine::getInstance()->isMissionLocked())
+    {
+        response.success = false;
+        response.message = "Mission currently locked";
+        return true;
+    }
 
     if(request.input == "")
     {
@@ -417,22 +443,76 @@ bool UiAPI::editStopCB(mission_control::Trigger::Request &request, mission_contr
 
 bool UiAPI::setMissionDataCB(mission_control::setMissionData::Request &request, mission_control::setMissionData::Response &response)
 {
+    ROS_DEBUG_STREAM("setMissionDataCB");
 
+    //check with system engine, if edit is allowed!
+    if(!SystemEngine::getInstance()->isEditAllowed())
+    {
+        response.success = false;
+        response.message = "Not in edit mode";
+        return true;
+    }
+
+    mission_control::MissionData data;
+    data.cad = request.cad;
+    data.description = request.description;
+    data.name = request.name;
+
+    response.success = MissionHandler::getInstance()->setMissionData(data);
+
+    return true;
 }
 
 bool UiAPI::setTaskDataCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response)
 {
+    ROS_DEBUG_STREAM("setTaskDataCB");
 
+    //check with system engine, if edit is allowed!
+    if(!SystemEngine::getInstance()->isEditAllowed())
+    {
+        response.success = false;
+        response.message = "Not in edit mode";
+        return true;
+    }
+
+    response.success = MissionHandler::getInstance()->setTaskData(request.name, request.data);
+
+    return true;
 }
 
 bool UiAPI::addTaskCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response)
 {
+    ROS_DEBUG_STREAM("addTaskCB");
 
+    //check with system engine, if edit is allowed!
+    if(!SystemEngine::getInstance()->isEditAllowed())
+    {
+        response.success = false;
+        response.message = "Not in edit mode";
+        return true;
+    }
+
+    response.success = MissionHandler::getInstance()->addTask(request.data, request.name);
+
+    return true;
 }
 
 bool UiAPI::deleteTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    return MissionHandler::getInstance()->deleteTask(request.input);
+    ROS_DEBUG_STREAM("deleteTaskCB");
+
+    //check with system engine, if edit is allowed!
+    if(!SystemEngine::getInstance()->isEditAllowed())
+    {
+        response.success = false;
+        response.message = "Not in edit mode";
+        return true;
+    }
+
+    response.success = MissionHandler::getInstance()->deleteTask(request.input);
+    response.message = "Failed to delete task";
+
+    return true;
 }
 
 

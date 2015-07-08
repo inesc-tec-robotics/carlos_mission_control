@@ -9,6 +9,7 @@ class ActionInterface;
 #include "actionlib/client/simple_action_client.h"
 #include "mission_ctrl_msgs/executeWeldAction.h"
 #include "mission_ctrl_msgs/movePlatformAction.h"
+#include "mission_ctrl_msgs/mission_ctrl_defines.h"
 
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::movePlatformAction> movePlatform_client;
 typedef actionlib::SimpleActionClient<mission_ctrl_msgs::executeWeldAction> executeWeld_client;
@@ -111,6 +112,10 @@ public:
     void setEnabledFunctions(std::vector<std::string> functions);
     void sendProgressUpdate(std::string description = "");
 
+    //Set state of stud. This is a wrapper for the MissionHandler::setStudState. Purpose: Make the
+    // function in mission handler private and execution engine a friend.
+    void setStudState(std::string task_name, std::string stud_name, stud::states state);
+
     //action client interface:
     ActionInterface* aci_;
 
@@ -141,7 +146,6 @@ private:
     void navFeedback();
     void goalCancelled();
     void hardwareError();
-
 };
 
 #endif // EXECUTIONENGINE_HPP_

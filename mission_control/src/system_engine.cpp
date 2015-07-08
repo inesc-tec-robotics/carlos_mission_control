@@ -36,20 +36,22 @@ struct instruct_start_e{};
 struct instruct_done_e{};
 struct assist_start_e{};
 struct assist_done_e{};
+struct edit_start_e{};
+struct edit_done_e{};
 struct exit_e{};
 struct shutdown_e{};
 
 ////////////////////////////
 /// Flags
 /// ///////////////////////
-struct EditAllowed{}; //not used at the moment
+struct MissionLock{};
+struct EditAllowed{};
 
 //////////////
 ///STATES
 /// //////////
 struct idle_s : public msm::front::state<>
 {
-    typedef mpl::vector1<EditAllowed>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
@@ -62,30 +64,29 @@ struct idle_s : public msm::front::state<>
 };
 struct executing_s : public msm::front::state<>
 {
+    typedef mpl::vector1<MissionLock>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Execution of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
         SystemEngine::getInstance()->current_state_ = SysState::EXECUTING;
-        SystemEngine::getInstance()->lockMissionHandler();
         ExecutionEngine::getInstance()->start();
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        SystemEngine::getInstance()->unlockMissionHandler();
         ROS_INFO_STREAM("Execution of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 struct instructing_s : public msm::front::state<>
 {
+    typedef mpl::vector1<MissionLock>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
         SystemEngine::getInstance()->current_state_ = SysState::INSTRUCTING;
-        SystemEngine::getInstance()->lockMissionHandler();
         if(!InstructionEngine::getInstance()->start())
         {
             ROS_ERROR_STREAM("Failed to start instruction engine for mission " << MissionHandler::getInstance()->getLoadedName());
@@ -95,12 +96,12 @@ struct instructing_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        SystemEngine::getInstance()->unlockMissionHandler();
         ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 struct assisting_s : public msm::front::state<>
 {
+    typedef mpl::vector1<MissionLock>      flag_list;
     template <class Event,class FSM>
     void on_entry(Event const&,FSM& )
     {
@@ -112,6 +113,26 @@ struct assisting_s : public msm::front::state<>
     void on_exit(Event const&,FSM& )
     {
         ROS_INFO_STREAM("Assisting of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
+    }
+};
+struct editing : public msm::front::state<>
+{
+    typedef mpl::vector2<EditAllowed, MissionLock>      flag_list;
+    template <class Event,class FSM>
+    void on_entry(Event const&,FSM& )
+    {
+        ROS_INFO_STREAM("Editing of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
+        SystemEngine::getInstance()->current_state_ = SysState::EDITING;
+        if(!InstructionEngine::getInstance()->start())
+        {
+            ROS_ERROR_STREAM("Failed to start instruction engine for mission " << MissionHandler::getInstance()->getLoadedName());
+        }
+    }
+
+    template <class Event,class FSM>
+    void on_exit(Event const&,FSM& )
+    {
+        ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 
@@ -309,12 +330,12 @@ bool SystemEngine::editDone()
 
 }
 
-void SystemEngine::lockMissionHandler()
+bool SystemEngine::isMissionLocked() const
 {
-    MissionHandler::getInstance()->lock();
+    return ssm_->is_flag_active<MissionLock>();
 }
 
-void SystemEngine::unlockMissionHandler()
+bool SystemEngine::isEditAllowed() const
 {
-    MissionHandler::getInstance()->unlock();
+    return ssm_->is_flag_active<EditAllowed>();
 }

@@ -4,6 +4,8 @@
 #include "ros/param.h"
 #include "ros/package.h"
 #include <boost/filesystem.hpp>
+#include <sys/stat.h>
+#include <sstream>
 
 #include "mission_handler.hpp"
 
@@ -24,7 +26,6 @@ MissionHandler* MissionHandler::getInstance()
 MissionHandler::MissionHandler()
 {
     auto_save_ = true;
-    lock_ = false;
 }
 
 MissionHandler::~MissionHandler()
@@ -53,7 +54,7 @@ string MissionHandler::getLoadedName()
 }
 
 void MissionHandler::close()
-{
+{    
     //check if open:
     if(ros::param::has("mission"))
     {
@@ -72,9 +73,6 @@ void MissionHandler::closeTemp()
 
 bool MissionHandler::load(string name, bool temp)
 {
-    if(lock_)
-        return false;
-
     //close any existing mission:
     if(!temp)
         close();
@@ -150,9 +148,6 @@ bool MissionHandler::saveAs(string name)
 {   
     //will change the mission name on the param server as well (just like when you save as in any other program)
 
-    if(lock_)
-        return false;
-
     //check that a mission is already loaded:
     if(!ros::param::has("mission"))
     {
@@ -168,9 +163,6 @@ bool MissionHandler::saveAs(string name)
 
 bool MissionHandler::createNew(string name)
 {
-    if(lock_)
-        return false;
-
     //close existing:
     close();
 
@@ -488,7 +480,7 @@ TaskData MissionHandler::getTaskData(int index)
     return params;
 }
 
-MissionData MissionHandler::getMissionParams()
+MissionData MissionHandler::getMissionData()
 {
     MissionData params;
 
@@ -513,7 +505,7 @@ MissionData MissionHandler::getMissionParams()
     return params;
 }
 
-MissionData MissionHandler::getMissionParams(string name)
+MissionData MissionHandler::getMissionData(string name)
 {
     MissionData params;
 
@@ -601,6 +593,68 @@ vector<string> MissionHandler::getPendingStuds(string task_name)
     }
 
     return pending_studs;
+}
+
+bool MissionHandler::setMissionData(mission_control::MissionData data)
+{
+    //check that a mission is loaded:
+    if(!isLoaded())
+    {
+        ROS_ERROR_STREAM("Cannot set mission data. No mission loaded.");
+        return false;
+    }
+
+    string current_name = getLoadedName();
+
+    //check if the name has changed:
+    if(data.name != "" && data.name != current_name)
+    {
+        namespace fs = boost::filesystem;
+
+        //check that the new name is not conflicting with an already existing mission:
+        vector<string> missions = getListOfMissions();
+        for(int i=0;(int)missions.size();i++)
+        {
+            if(data.name == missions[i])
+            {
+                ROS_ERROR_STREAM("Cannot change mission data. New name: " << data.name << " conflicts with already existing mission name");
+                return false;
+            }
+        }
+
+        //the name has been changed (and a new name is provided)'
+        ros::param::set("mission/name", data.name);
+
+        //call save to save the file under the new name:
+        save();
+
+        //now delete the "old" file:
+        string old_file = getStoragePath() + "/" + current_name;
+        struct stat st;
+        lstat(old_file.c_str(), &st);
+        if(S_ISDIR(st.st_mode))
+        {
+            std::cerr << "Error: Tried to delete directory! Aborting. " << std::endl;
+            return false;
+        }
+
+        if(fs::remove(old_file.c_str()) != 0 )
+        {
+            std::cerr << "Error deleting file: " << old_file << std::endl;
+            return false;
+        }
+    }
+
+    //update/set the data:
+    ros::param::set("mission/CAD", data.cad);
+    ros::param::set("mission/description", data.description);
+    ros::param::set("mission/last_saved", data.last_saved);
+    ros::param::set("mission/state", data.state);
+
+    //save
+    save();
+
+    return true;
 }
 
 bool MissionHandler::addStud(string task_name, double x, double y, string stud_name)
@@ -720,6 +774,63 @@ bool MissionHandler::updateMissionState()
     return true;
 }
 
+bool MissionHandler::setTaskData(string name, mission_control::TaskData data)
+{
+    //get name of loaded mission
+    string mission_name = getLoadedName();
+
+    //check that a mission is loaded:
+    if(mission_name == "")
+    {
+        ROS_ERROR_STREAM("Cannot set task data. No mission loaded");
+        return false;
+    }
+
+    //check if task exists
+    if(!isTask(name))
+    {
+        ROS_ERROR_STREAM("Cannot set task data for task " << name << ". Task not found in current mission " << mission_name);
+        return false;
+    }
+
+    //check if task execution has already been tried:
+    mission::state task_state = getTaskState(name);
+    if(task_state.toUInt() > mission::INSTRUCTED)   //task already partially welded
+    {
+        ROS_ERROR_STREAM("Task " << name << " already partially or fully welded. Changing task data not allowed!. Task state: " << task_state.toString());
+        return false;
+    }
+
+    //if any of the task params related to "studs" are changed, then any existing studs will be removed!
+    TaskData current_data = getTaskData(name);
+    if(     data.stud_type!=current_data.stud_type ||
+            data.stud_pattern.distance != current_data.stud_pattern.distance ||
+            data.stud_pattern.proximity != current_data.stud_pattern.proximity ||
+            data.stud_pattern.distribution != current_data.stud_pattern.distribution)       //we leave out "press" as it is only effective during welding.
+    {
+        //somthing related to the stud positions has changed. Remove all studs!
+        ros::param::del(("mission/tasks/" + name + "/studs"));
+    }
+
+    //set the task data:
+    string key = "mission/tasks/" + name;
+    ros::param::set((key + "/nav_goal/x"), data.nav_goal.x);
+    ros::param::set((key + "/nav_goal/y"), data.nav_goal.y);
+    ros::param::set((key + "/nav_goal/yaw"), data.nav_goal.yaw);
+    ros::param::set((key + "/stud_type"), data.stud_type);
+    ros::param::set((key + "/stud_pattern/distribution"), data.stud_pattern.distribution);
+    ros::param::set((key + "/stud_pattern/proximity"), data.stud_pattern.proximity);
+    ros::param::set((key + "/stud_pattern/distance"), data.stud_pattern.distance);
+    ros::param::set((key + "/stud_pattern/press"), data.stud_pattern.press);
+
+    //update the task state:
+    updateTaskState(name);
+
+    //no need to save - updateTaskState has just done it!
+
+    return true;
+}
+
 bool MissionHandler::updateTaskState(string task_name)
 {
     ROS_DEBUG("MissionHandler::updateTaskState");
@@ -797,6 +908,57 @@ bool MissionHandler::updateTaskState(string task_name)
     return true;
 }
 
+bool MissionHandler::addTask(mission_control::TaskData data, string name)
+{
+    //check that IF a name is given, it does not conflict with existing task name:
+    if(isTask(name))
+    {
+        ROS_ERROR_STREAM("Cannot add task " << name << ". A task with this name already exists");
+        return false;
+    }
+
+    //if no name given, auto-generate one:
+    if(name == "")
+    {
+        vector<string> tasks = getTaskList();
+
+        int index = 1;
+        string task_base = "task_";
+
+        while(true)
+        {
+            stringstream task_name_ss;
+            task_name_ss << task_base << index;
+            bool found = true;
+
+            for(int i=0;i<(int)tasks.size();i++)
+            {
+                if(tasks[i] == task_name_ss.str())
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found)
+            {
+                index++;
+            }
+            else            //not found - we have a valid name
+            {
+                name = task_name_ss.str();
+                break;
+            }
+        } //end while
+    } //end if
+
+    //add the task - we do this by adding a state!
+    ros::param::set("mission/tasks/" + name + "/state", (int)mission::EMPTY);
+
+    //finally - add the task data.
+    return setTaskData(name,data);
+}
+
 bool MissionHandler::deleteTask(string task_name)
 {
     //check if a task_name is supplied:
@@ -822,7 +984,6 @@ string MissionHandler::getStoragePath()
     return (ros::package::getPath("mission_control") +"/mission_library");
 }
 
-
 string NavGoal::toString(bool verbose)
 {
     stringstream ss;
@@ -834,7 +995,6 @@ string NavGoal::toString(bool verbose)
 
     return ss.str();
 }
-
 
 mission_control::MissionData MissionData::toMsg() const
 {
@@ -849,7 +1009,6 @@ mission_control::MissionData MissionData::toMsg() const
 
     return data;
 }
-
 
 mission_control::TaskData TaskData::toMsg() const
 {
@@ -866,3 +1025,4 @@ mission_control::TaskData TaskData::toMsg() const
 
     return data;
 }
+

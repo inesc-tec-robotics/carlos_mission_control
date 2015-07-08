@@ -127,6 +127,8 @@ struct MissionData
 class MissionHandler
 {
     friend class SystemEngine;
+    friend class InstructionEngine;
+    friend class ExecutionEngine;
 
 public:
     static MissionHandler* getInstance();
@@ -158,44 +160,55 @@ public:
     mission::state getState();
     mission::state getState(std::string name);
 
+    //get state of task
     mission::state getTaskState(std::string task_name);
     mission::state getTaskState(int index);
 
+    //get list of tasks
     std::vector<std::string> getTaskList();
     std::vector<std::string> getExecutableTasks();
     std::vector<std::string> getInstructableTasks();
 
+    //get data for task
     TaskData getTaskData(std::string task_name);
     TaskData getTaskData(int index);
 
-    MissionData getMissionParams();
-    MissionData getMissionParams(std::string name);
+    //get mission data
+    MissionData getMissionData();
+    MissionData getMissionData(std::string name);
 
+    //get stud lists
     std::vector<std::string> getStudList(std::string task_name);
     std::vector<std::string> getPendingStuds(std::string task_name);
 
+    //modify mission data
+    bool setMissionData(mission_control::MissionData data);
+    bool updateMissionState();
+
+    //modify task data
+    bool setTaskData(std::string name, mission_control::TaskData data);
+    bool updateTaskState(std::string task_name);
+    bool addTask(mission_control::TaskData data, std::string name = "");
+    bool deleteTask(std::string task_name);
+
+    //modify stud data - private so only my friends can access!
     bool addStud(std::string task_name, double x, double y, std::string stud_name = "auto_generate");
     bool setStudState(std::string task_name, std::string stud_name, stud::states state);
-    bool updateMissionState();
-    bool updateTaskState(std::string task_name);
-
-    //bool setMissionData()
-    bool deleteTask(std::string task_name);
 
 private:
 
     MissionHandler();
     static MissionHandler* instance_;
 
+    //"close" mission - hence remove from param server
     void close();
     void closeTemp();
 
+    //get path to the mission library
     std::string getStoragePath();
-    void lock()     {lock_ = true;}
-    void unlock()   {lock_ = false;}
 
+    //auto save flag
     bool auto_save_;
-    bool lock_;
 
 };
 

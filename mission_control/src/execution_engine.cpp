@@ -303,7 +303,7 @@ struct reset_stud_a
     void operator()(EVT const& ,FSM& fsm,SourceState& src,TargetState& )
     {
         //resetting stud to "pending"
-        MissionHandler::getInstance()->setStudState(ExecutionEngine::getInstance()->getCurrentTask(), src.failed_stud_name_,stud::PENDING);
+        ExecutionEngine::getInstance()->setStudState(ExecutionEngine::getInstance()->getCurrentTask(), src.failed_stud_name_,stud::PENDING);
     }
 };
 struct send_execute_done_a //not used currently
@@ -546,6 +546,9 @@ void ExecutionEngine::maniFeedback(string stud, bool success)
     if(!success)
         failed_stud_ = stud;
 
+    //update the stud on the ros param server
+    setStudState(getCurrentTask(),stud,(success ? stud::SUCCEEDED : stud::FAILED)); //ain't complex code just a beauty?!
+
     sendProgressUpdate();
 }
 
@@ -656,4 +659,9 @@ void ExecutionEngine::setEnabledFunctions(vector<string> functions)
     {
         enabled_functions[functions[i]] = true;
     }
+}
+
+void ExecutionEngine::setStudState(string task_name, string stud_name, stud::states state)
+{
+    MissionHandler::getInstance()->setStudState(task_name, stud_name, state);
 }

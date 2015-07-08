@@ -269,7 +269,6 @@ void ActionInterface::armActiveCB()
 void ActionInterface::armFeedbackCB(const mission_ctrl_msgs::executeWeldFeedbackConstPtr &feedback)
 {
     ROS_INFO_STREAM("Received feedback from arm");
-    MissionHandler::getInstance()->setStudState(ee_->getCurrentTask(),feedback->stud_id,(feedback->stud_state ? stud::SUCCEEDED : stud::FAILED)); //ain't complex code just a beauty?!
     ee_->maniFeedback(feedback->stud_id,feedback->stud_state);
 }
 

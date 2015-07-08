@@ -16,16 +16,18 @@ public:
         IDLE,
         EXECUTING,
         INSTRUCTING,
-        ASSISTING
+        ASSISTING,
+        EDITING
     };
 
     SysState()
     {
         compare_map_ = boost::assign::map_list_of
                 (IDLE,                   "idle")
-                (EXECUTING,               "executing")
+                (EXECUTING,              "executing")
                 (INSTRUCTING,            "instructing")
-                (ASSISTING,              "assisting");
+                (ASSISTING,              "assisting")
+                (EDITING,                "editing");
     }
 
     void operator=( const std::string value_string )
@@ -88,8 +90,9 @@ public:
     void assistDone();
     bool editDone();
 
-    void lockMissionHandler();
-    void unlockMissionHandler();
+    //get flags:
+    bool isMissionLocked() const;
+    bool isEditAllowed() const;
 
     //current state:
     SysState current_state_;

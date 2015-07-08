@@ -12,6 +12,8 @@ class ActionInterface;
 
 class InstrState
 {
+    friend class InstrStateMachine;
+
 public:
     enum values
     {
@@ -112,6 +114,9 @@ public:
     void setEnabledFunctions(std::vector<std::string> functions);
     void sendProgressUpdate(std::string description = "");
 
+    //Add studs to task. Wraps the call to "mission handler - addStud".
+    void addStuds(std::vector<geometry_msgs::Point> stud_positions);
+
     //action client interface:
     ActionInterface* aci_;
 
@@ -139,7 +144,6 @@ private:
     void navFailed();
     void goalCancelled();
     void hardwareError();
-
 };
 
 #endif // INSTRUCTIONENGINE_HPP_

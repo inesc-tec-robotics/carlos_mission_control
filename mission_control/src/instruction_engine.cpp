@@ -523,10 +523,7 @@ void InstructionEngine::teachFeedback()
 void InstructionEngine::genPosDone(vector<geometry_msgs::Point> stud_positions)
 {
     //add the studs to the task
-    for(int i=0;i<(int)stud_positions.size();i++)
-    {
-        MissionHandler::getInstance()->addStud(getCurrentTask(), stud_positions[i].x, stud_positions[i].y);
-    }
+    addStuds(stud_positions);
 
     //update the task-state:
     MissionHandler::getInstance()->updateTaskState(getCurrentTask());
@@ -670,4 +667,12 @@ void InstructionEngine::sendProgressUpdate(string description)
     UiAPI::getInstance()->instrProgressUpdate(progress);
 }
 
+void InstructionEngine::addStuds(vector<geometry_msgs::Point> stud_positions)
+{
+    //add the studs to the task
+    for(int i=0;i<(int)stud_positions.size();i++)
+    {
+        MissionHandler::getInstance()->addStud(getCurrentTask(), stud_positions[i].x, stud_positions[i].y);
+    }
+}
 
