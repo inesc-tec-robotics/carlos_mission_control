@@ -70,9 +70,9 @@ MainWindow::MainWindow(QWidget *parent) :
     initUI();
 
     //initialize ros rubscribers
-//    hw_state_sub = n.subscribe(UIAPI_HW_STATES, 10, &MainWindow::hwStateCB, this);
-//    exec_progress_sub = n.subscribe(UIAPI_EXEC_PROGRESS, 10, &MainWindow::execProgressCB, this);
-//    instr_progress_sub = n.subscribe(UIAPI_INSTR_PROGRESS, 10, &MainWindow::instrProgressCB, this);
+    //    hw_state_sub = n.subscribe(UIAPI_HW_STATES, 10, &MainWindow::hwStateCB, this);
+    //    exec_progress_sub = n.subscribe(UIAPI_EXEC_PROGRESS, 10, &MainWindow::execProgressCB, this);
+    //    instr_progress_sub = n.subscribe(UIAPI_INSTR_PROGRESS, 10, &MainWindow::instrProgressCB, this);
 
     updateInfo();
 }
@@ -107,11 +107,14 @@ void MainWindow::initUI()
     //init tab widget:
     ui->tabWidget->setCurrentIndex(0); //always start at "info" tab
 
+    //hide the edits:
+    ui->mission_name_edit->hide();
+    ui->cad_edit->hide();
+
     //init the tabs:
     initInfoTab();
     initExecuteTab();
     initInstructTab();
-
 }
 
 void MainWindow::initExecuteTab()
@@ -128,6 +131,12 @@ void MainWindow::initInstructTab()
 
 void MainWindow::initInfoTab()
 {
+    ui->task_name_edit->hide();
+    ui->stud_distribution_edit->hide();
+    ui->stud_dist_edit->hide();
+    ui->stud_proximity_edit->hide();
+    ui->stud_type_edit->hide();
+
     hideTaskParams();
 }
 
@@ -460,8 +469,12 @@ void MainWindow::updateMissionData()
         ui->cad_ref->setText("<no CAD>");
         ui->mission_state->setText("");
         hideTaskParams();
+        ui->editMissionButton->hide();
         return;
     }
+
+    //a mission is loaded. Show the "edit" button
+    ui->editMissionButton->show();
 
     mission_control::getMissionData srv2;
     ros::ServiceClient client2 = n.serviceClient<mission_control::getMissionData>(UIAPI_GET_MISSION_DATA);
@@ -492,6 +505,7 @@ void MainWindow::hideTaskParams()
     ui->nav_goal_label->hide();
     ui->number_of_studs_label->hide();
     ui->task_state->hide();
+    ui->editTaskButton->hide();
 }
 
 void MainWindow::showTaskParams()
@@ -504,6 +518,193 @@ void MainWindow::showTaskParams()
     ui->nav_goal_label->show();
     ui->number_of_studs_label->show();
     ui->task_state->show();
+    ui->editTaskButton->show();
+}
+
+void MainWindow::startMissionEdit()
+{
+    //set editButton icon and text:
+    ui->editMissionButton->setText("Close");
+
+    //disable tab-widget + task list
+    ui->tabWidget->setEnabled(false);
+    ui->taskList->setEnabled(false);
+
+    //transfer data from labels to edits:
+    ui->mission_name_edit->setText(ui->mission_name->text());
+    ui->cad_edit->setText(ui->cad_ref->text());
+
+    //hide the labels:
+    ui->mission_name->hide();
+    ui->cad_ref->hide();
+
+    //show the edits:
+    ui->mission_name_edit->show();
+    ui->cad_edit->show();
+}
+
+void MainWindow::closeMissionEdit()
+{
+    //set editButton icon and text:
+    ui->editMissionButton->setText("Edit");
+
+    //enable tab-widget + task list
+    ui->tabWidget->setEnabled(true);
+    ui->taskList->setEnabled(true);
+
+    //transfer data from edits
+    ///could be done by simple updating mission data via ros service
+
+    //hide the edits
+    ui->mission_name_edit->hide();
+    ui->cad_edit->hide();
+
+    //show the labels:
+    ui->mission_name->show();
+    ui->cad_ref->show();
+}
+
+void MainWindow::startTaskEdit()
+{
+    //set editButton icon and text:
+    ui->editTaskButton->setText("Close");
+
+    //disable other tabs + task list + mission edit button
+    ui->tabWidget->setTabEnabled(1,false);
+    ui->tabWidget->setTabEnabled(2,false);
+    ui->taskList->setEnabled(false);
+    ui->editMissionButton->setEnabled(false);
+
+    //set the data of the edits:
+    ui->task_name_edit->setText(ui->task_name_label->text());
+    ui->stud_dist_edit->setValue(ui->stud_dist_label->text().toDouble());
+    ui->stud_proximity_edit->setValue(ui->stud_proximity_label->text().toDouble());
+
+    //fill the distribution combo-box:
+    //...
+
+    //fill the stud type combobox
+    //...
+
+    //hide the qlabels
+    ui->task_name_label->hide();
+    ui->stud_distribution_label->hide();
+    ui->stud_dist_label->hide();
+    ui->stud_proximity_label->hide();
+    ui->stud_type_label->hide();
+
+    //show the edits
+    ui->task_name_edit->show();
+    ui->stud_distribution_edit->show();
+    ui->stud_dist_edit->show();
+    ui->stud_proximity_edit->show();
+    ui->stud_type_edit->show();
+}
+
+void MainWindow::closeTaskEdit()
+{
+    //set editButton icon and text:
+    ui->editTaskButton->setText("Edit");
+
+    //enable other tabs + task list + mission edit
+    ui->tabWidget->setTabEnabled(1,true);
+    ui->tabWidget->setTabEnabled(2,true);
+    ui->taskList->setEnabled(true);
+    ui->editMissionButton->setEnabled(false);
+
+    //hide the edits
+    ui->task_name_edit->hide();
+    ui->stud_distribution_edit->hide();
+    ui->stud_dist_edit->hide();
+    ui->stud_proximity_edit->hide();
+    ui->stud_type_edit->hide();
+
+    //transfer data:
+
+
+    //show the labels
+    ui->task_name_label->show();
+    ui->stud_distribution_label->show();
+    ui->stud_dist_label->show();
+    ui->stud_proximity_label->show();
+    ui->stud_type_label->show();
+
+
+
+}
+
+void MainWindow::on_editMissionButton_clicked()
+{
+    if(ui->mission_name->text().toStdString() == "<no mission>")
+    {
+        //no mission loaded! This shouldn't happen, as the user should not be able to click the "edit" button.
+        return;
+    }
+
+    //check if edit begin or end:
+    if(ui->editMissionButton->text().toStdString() == "Edit")
+    {
+        //go to edit mode:
+        mission_control::Trigger srv;
+        ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_START);
+        if(!client.call(srv))
+            return;
+
+        if(!srv.response.success)
+            return;
+
+        startMissionEdit();
+    }
+    else
+    {
+        mission_control::Trigger srv;
+        ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_STOP);
+        if(!client.call(srv))
+            return;
+
+        if(!srv.response.success)
+            return;
+
+        closeMissionEdit();
+    }
+}
+
+void MainWindow::on_editTaskButton_clicked()
+{
+    if(ui->task_name_label->isHidden() && ui->task_name_edit->isHidden())
+    {
+        //no task selected! This shouldn't happen, as the user should not be able to click the "edit" button.
+        return;
+    }
+
+    //check if edit begin or end:
+    if(ui->editTaskButton->text() == "Edit")
+    {
+        //go to edit mode:
+        mission_control::Trigger srv;
+        ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_START);
+        if(!client.call(srv))
+            return;
+
+        if(!srv.response.success)
+        {
+            return;
+        }
+
+        startTaskEdit();
+    }
+    else
+    {
+        mission_control::Trigger srv;
+        ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_STOP);
+        if(!client.call(srv))
+            return;
+
+        if(!srv.response.success)
+            return;
+
+        closeTaskEdit();
+    }
 }
 
 void MainWindow::on_execStartButton_clicked()
@@ -793,3 +994,6 @@ void MainWindow::instrProgressUpdate(const mission_control::Progress::ConstPtr &
     //update the meta info:
     updateMissionData();
 }
+
+
+

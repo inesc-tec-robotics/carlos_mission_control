@@ -9,6 +9,6 @@
     
   <node name="mission_controller" pkg="mission_control" type="mission_controller_node" output="screen" respawn="false" required="true" />
   
-  <node name="GUI" pkg="mission_control" type="mission_controller_gui" respawn="false" required="true" />
+  <node name="GUI" pkg="mission_control" type="mission_controller_gui" respawn="false" required="true" output="screen" />
   
 </launch>

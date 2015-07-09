@@ -115,7 +115,7 @@ struct assisting_s : public msm::front::state<>
         ROS_INFO_STREAM("Assisting of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
-struct editing : public msm::front::state<>
+struct editing_s : public msm::front::state<>
 {
     typedef mpl::vector2<EditAllowed, MissionLock>      flag_list;
     template <class Event,class FSM>
@@ -123,16 +123,12 @@ struct editing : public msm::front::state<>
     {
         ROS_INFO_STREAM("Editing of mission " << MissionHandler::getInstance()->getLoadedName() << " started");
         SystemEngine::getInstance()->current_state_ = SysState::EDITING;
-        if(!InstructionEngine::getInstance()->start())
-        {
-            ROS_ERROR_STREAM("Failed to start instruction engine for mission " << MissionHandler::getInstance()->getLoadedName());
-        }
     }
 
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
-        ROS_INFO_STREAM("Instruction of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
+        ROS_INFO_STREAM("Edit of mission " << MissionHandler::getInstance()->getLoadedName() << " finished");
     }
 };
 
@@ -207,6 +203,20 @@ struct mission_instructable_g
         }
     }
 };
+struct mission_editable_g
+{
+    template <class FSM,class EVT,class SourceState,class TargetState>
+    bool operator()(EVT const& evt,FSM&,SourceState& ,TargetState& )
+    {
+        if(!MissionHandler::getInstance()->isLoaded())
+        {
+            ROS_ERROR("Cannot edit mission. No mission currently loaded.");
+            return false;
+        }
+
+        return true;
+    }
+};
 
 // front-end: define the FSM structure
 struct SystemStateMachine_ : public msm::front::state_machine_def<SystemStateMachine_>
@@ -233,15 +243,19 @@ struct SystemStateMachine_ : public msm::front::state_machine_def<SystemStateMac
             Row < idle_s,               exec_start_e,             executing_s,    none,                       And_<hw_idle_g, mission_executable_g>    >,
             Row < idle_s,               instruct_start_e,         instructing_s,  none,                       And_<hw_idle_g, mission_instructable_g>  >,
             //Row < idle_s,               assist_start_e,           assisting_s,    none,                       none                >,          //re-insert once (if) assist mode is developed
+            Row < idle_s,               edit_start_e,             editing_s,      none,                       mission_editable_g  >,
             Row < idle_s,               exec_done_e,              idle_s,         none,                       none                >,
             Row < idle_s,               instruct_done_e,          idle_s,         none,                       none                >,
+            Row < idle_s,               edit_done_e,              idle_s,         none,                       none                >,
             //  +---------+-------------+---------+---------------------+----------------------+
             Row < executing_s,          exit_e,             idle_s,         none,                       none                >,
             Row < executing_s,          exec_done_e,        idle_s,         none,                       none                >,
             Row < instructing_s,        exit_e,             idle_s,         none,                       none                >,
             Row < instructing_s,        instruct_done_e,    idle_s,         none,                       none                >,
             Row < assisting_s,          exit_e,             idle_s,         none,                       none                >,
-            Row < assisting_s,          assist_done_e,      idle_s,         none,                       none                >
+            Row < assisting_s,          assist_done_e,      idle_s,         none,                       none                >,
+            Row < editing_s,            exit_e,             idle_s,         none,                       none                >,
+            Row < editing_s,            edit_done_e,        idle_s,         none,                       none                >
             > {};
 
     /* CS notes!!
@@ -307,7 +321,7 @@ bool SystemEngine::assist()
 
 bool SystemEngine::edit()
 {
-
+    return(ssm_->process_event(edit_start_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
 void SystemEngine::executeDone()
@@ -327,7 +341,7 @@ void SystemEngine::assistDone()
 
 bool SystemEngine::editDone()
 {
-
+    return(ssm_->process_event(edit_done_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
 bool SystemEngine::isMissionLocked() const

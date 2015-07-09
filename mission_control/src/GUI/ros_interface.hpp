@@ -6,7 +6,6 @@
 #include <QtGui>
 #include <QIcon>
 #include <QWidget>
-#include "ui_mainwindow.h"
 #include "ros/node_handle.h"
 #include "mission_control/HardwareStates.h"
 #include "mission_control/Progress.h"

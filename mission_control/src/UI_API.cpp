@@ -414,7 +414,7 @@ bool UiAPI::instrRetryCB(mission_control::Trigger::Request &request, mission_con
 
 bool UiAPI::editStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
-    ROS_DEBUG_STREAM("editStartCB - name: " << request.input);
+    ROS_INFO_STREAM("editStartCB - name: " << request.input);
 
     if(request.input != "" && request.input != MissionHandler::getInstance()->getLoadedName())
     {

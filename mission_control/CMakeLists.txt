@@ -102,6 +102,8 @@ include_directories(${QT_INCLUDE_DIR})
    StudPattern.msg
    TaskData.msg
    MissionData.msg
+   ParamDouble.msg
+   ParamString.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -114,6 +116,7 @@ add_service_files(
    getTaskData.srv
    setTaskData.srv
    setMissionData.srv
+   getTaskParams.srv
  )
 
 ## Generate actions in the 'action' folder

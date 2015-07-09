@@ -96,6 +96,10 @@ private slots:
 
     void on_instrSkipTaskButton_clicked();
 
+    void on_editTaskButton_clicked();
+
+    void on_editMissionButton_clicked();
+
 public slots:
     void execProgressUpdate(const mission_control::Progress::ConstPtr &msg);
     void instrProgressUpdate(const mission_control::Progress::ConstPtr &msg);
@@ -120,6 +124,14 @@ private:
 
     void hideTaskParams();
     void showTaskParams();
+
+    //start/stop editing mission
+    void startMissionEdit();
+    void closeMissionEdit();
+
+    //start/stop editing of task
+    void startTaskEdit();
+    void closeTaskEdit();
 
 //    void hwStateCB(const mission_control::HardwareStates::ConstPtr &msg);
 //    void execProgressCB(const mission_control::Progress::ConstPtr &msg);
