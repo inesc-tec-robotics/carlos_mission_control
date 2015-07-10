@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   message_generation
   mission_ctrl_msgs
-  LoggerSys
 )
 
 ## System dependencies are found with CMake's conventions
@@ -150,7 +149,6 @@ catkin_package(
   roslib
   message_runtime
   mission_ctrl_msgs
-  LoggerSys
   DEPENDS Boost
   )
 
