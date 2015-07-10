@@ -1,8 +1,8 @@
 CAD: room1.cad
 description: This is a super duper stud welding mission
-last_saved: 1436361505.1749587
+last_saved: 1436558984.2106771
 name: instructed
-state: 4
+state: 0
 tasks:
   task_1:
     nav_goal: {x: 236.78, y: 364.74, yaw: 1.24}
@@ -15,32 +15,17 @@ tasks:
       stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
   task_2:
-    nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
-    state: 4
-    stud_pattern: {distance: 400.0, distribution: some_dist, press: 50.0, proximity: 125.0}
-    stud_type: type89
-    studs:
-      stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
-      stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
-      stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
-      stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
+    nav_goal: {x: 896.78, y: 470.73, yaw: 1.24}
+    state: 2
+    stud_pattern: {distance: 200.0, distribution: 2 1 2, press: 0.0, proximity: 0.0}
+    stud_type: M3x70
   task_3:
-    nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
-    state: 4
-    stud_pattern: {distance: 150.0, distribution: some_dist, press: 50.0, proximity: 250.0}
-    stud_type: type31
-    studs:
-      stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
-      stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
-      stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
-      stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
+    nav_goal: {x: 0.0, y: 0.0, yaw: 0.0}
+    state: 2
+    stud_pattern: {distance: 150.0, distribution: 2 1 2, press: 0.0, proximity: 0.0}
+    stud_type: M3x70
   task_4:
-    nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
-    state: 4
-    stud_pattern: {distance: 250.0, distribution: some_dist, press: 50.0, proximity: 100.0}
-    stud_type: type49
-    studs:
-      stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
-      stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
-      stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
-      stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
+    nav_goal: {x: 0.0, y: 0.0, yaw: 0.0}
+    state: 2
+    stud_pattern: {distance: 200.0, distribution: 2 1 2, press: 0.0, proximity: 0.0}
+    stud_type: M3x70

@@ -6,7 +6,6 @@ mission_control/ParamDouble force
 mission_control/ParamDouble distance
 mission_control/ParamDouble proximity
 mission_control/ParamDouble power
-mission_control/ParamDouble nav_goal_x
-mission_control/ParamDouble nav_goal_y
-mission_control/ParamDouble nav_goal_yaw
+bool success
+string message
 

@@ -613,7 +613,7 @@ bool MissionHandler::setMissionData(mission_control::MissionData data)
 
         //check that the new name is not conflicting with an already existing mission:
         vector<string> missions = getListOfMissions();
-        for(int i=0;(int)missions.size();i++)
+        for(int i=0;i<(int)missions.size();i++)
         {
             if(data.name == missions[i])
             {
@@ -629,7 +629,7 @@ bool MissionHandler::setMissionData(mission_control::MissionData data)
         save();
 
         //now delete the "old" file:
-        string old_file = getStoragePath() + "/" + current_name;
+        string old_file = getStoragePath() + "/" + current_name + ".yaml";
         struct stat st;
         lstat(old_file.c_str(), &st);
         if(S_ISDIR(st.st_mode))
@@ -638,17 +638,12 @@ bool MissionHandler::setMissionData(mission_control::MissionData data)
             return false;
         }
 
-        if(fs::remove(old_file.c_str()) != 0 )
-        {
-            std::cerr << "Error deleting file: " << old_file << std::endl;
-            return false;
-        }
+        fs::remove(old_file.c_str());
     }
 
     //update/set the data:
     ros::param::set("mission/CAD", data.cad);
     ros::param::set("mission/description", data.description);
-    ros::param::set("mission/last_saved", data.last_saved);
     ros::param::set("mission/state", data.state);
 
     //save

@@ -45,6 +45,8 @@
 #include <iostream>
 #include <QItemSelectionModel>
 #include <QMessageBox>
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 
 #include "ros/service_client.h"
 #include "mission_control/Trigger.h"
@@ -52,11 +54,12 @@
 #include "mission_control/getMissionData.h"
 #include "mission_control/getTaskList.h"
 #include "mission_control/getTaskData.h"
+#include "mission_control/getTaskParams.h"
+#include "mission_control/setTaskData.h"
+#include "mission_control/setMissionData.h"
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
 #include "ros_interface.hpp"
-
-
 
 using namespace std;
 
@@ -110,6 +113,7 @@ void MainWindow::initUI()
     //hide the edits:
     ui->mission_name_edit->hide();
     ui->cad_edit->hide();
+    ui->mission_description_edit->hide();
 
     //init the tabs:
     initInfoTab();
@@ -136,6 +140,9 @@ void MainWindow::initInfoTab()
     ui->stud_dist_edit->hide();
     ui->stud_proximity_edit->hide();
     ui->stud_type_edit->hide();
+    ui->nav_x_edit->hide();
+    ui->nav_y_edit->hide();
+    ui->nav_yaw_edit->hide();
 
     hideTaskParams();
 }
@@ -398,28 +405,33 @@ void MainWindow::on_taskList_selection_changed(const QModelIndex &index, const Q
 {
     string task = index.data().toString().toStdString();
 
+    updateTaskData(task);
+
+    showTaskParams();
+}
+
+void MainWindow::updateTaskData(string task_name)
+{
+
+    cout << "task" << task_name << endl;
     mission_control::getTaskData srv;
-    srv.request.name = task;
+    srv.request.name = task_name;
     ros::ServiceClient client = n.serviceClient<mission_control::getTaskData>(UIAPI_GET_TASK_DATA);
     if(!client.call(srv))
     {
         return;
     }
 
-    ui->task_name_label->setText(QString::fromStdString(task));
+    ui->task_name_label->setText(QString::fromStdString(task_name));
     ui->stud_type_label->setText(QString::fromStdString(srv.response.data.stud_type));
     ui->stud_distribution_label->setText(QString::fromStdString(srv.response.data.stud_pattern.distribution));
     ui->stud_dist_label->setText(QString::number(srv.response.data.stud_pattern.distance));
     ui->stud_proximity_label->setText(QString::number(srv.response.data.stud_pattern.proximity));
-
-    stringstream ss;
-    ss << "x: " << srv.response.data.nav_goal.x << " y: " << srv.response.data.nav_goal.y << " yaw: " << srv.response.data.nav_goal.yaw;
-
-    ui->nav_goal_label->setText(QString::fromStdString( ss.str() ));
+    ui->nav_x_label->setText(QString::number(srv.response.data.nav_goal.x));
+    ui->nav_y_label->setText(QString::number(srv.response.data.nav_goal.y));
+    ui->nav_yaw_label->setText(QString::number(srv.response.data.nav_goal.yaw));
     ui->number_of_studs_label->setText(QString::number(srv.response.data.number_of_studs));
     ui->task_state->setText(QString::fromStdString(srv.response.data.state_description));
-
-    showTaskParams();
 }
 
 void MainWindow::updateTaskList()
@@ -466,8 +478,10 @@ void MainWindow::updateMissionData()
     if(srv.response.message == "")
     {
         ui->mission_name->setText("<no mission>");
+        ui->mission_description->setText("");
         ui->cad_ref->setText("<no CAD>");
         ui->mission_state->setText("");
+        ui->last_saved->setText("");
         hideTaskParams();
         ui->editMissionButton->hide();
         return;
@@ -486,6 +500,20 @@ void MainWindow::updateMissionData()
     ui->mission_name->setText(QString::fromStdString(srv2.response.data.name));
     ui->cad_ref->setText(QString::fromStdString(srv2.response.data.cad));
     ui->mission_state->setText(QString::fromStdString(srv2.response.data.state_description));
+    ui->mission_description->setText(QString::fromStdString(srv2.response.data.description));
+
+    //convert last saved double to a human readable formate:
+    ros::Time mytime;
+    mytime.fromSec(srv2.response.data.last_saved);
+    boost::posix_time::ptime temp = mytime.toBoost();
+
+    //reformat the output:
+    boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
+    stringstream ss;
+    ss.imbue(std::locale(std::locale::classic(), facet));
+    ss << temp << "  UTC";
+
+    ui->last_saved->setText(QString::fromStdString(ss.str()));
 }
 
 void MainWindow::updateInfo()
@@ -502,7 +530,9 @@ void MainWindow::hideTaskParams()
     ui->stud_dist_label->hide();
     ui->stud_proximity_label->hide();
     ui->stud_type_label->hide();
-    ui->nav_goal_label->hide();
+    ui->nav_x_label->hide();
+    ui->nav_y_label->hide();
+    ui->nav_yaw_label->hide();
     ui->number_of_studs_label->hide();
     ui->task_state->hide();
     ui->editTaskButton->hide();
@@ -515,7 +545,9 @@ void MainWindow::showTaskParams()
     ui->stud_dist_label->show();
     ui->stud_proximity_label->show();
     ui->stud_type_label->show();
-    ui->nav_goal_label->show();
+    ui->nav_x_label->show();
+    ui->nav_y_label->show();
+    ui->nav_yaw_label->show();
     ui->number_of_studs_label->show();
     ui->task_state->show();
     ui->editTaskButton->show();
@@ -533,14 +565,17 @@ void MainWindow::startMissionEdit()
     //transfer data from labels to edits:
     ui->mission_name_edit->setText(ui->mission_name->text());
     ui->cad_edit->setText(ui->cad_ref->text());
+    ui->mission_description_edit->setText(ui->mission_description->text());
 
     //hide the labels:
     ui->mission_name->hide();
     ui->cad_ref->hide();
+    ui->mission_description->hide();
 
     //show the edits:
     ui->mission_name_edit->show();
     ui->cad_edit->show();
+    ui->mission_description_edit->show();
 }
 
 void MainWindow::closeMissionEdit()
@@ -552,16 +587,30 @@ void MainWindow::closeMissionEdit()
     ui->tabWidget->setEnabled(true);
     ui->taskList->setEnabled(true);
 
-    //transfer data from edits
-    ///could be done by simple updating mission data via ros service
+    //send the new data to MC
+    mission_control::setMissionData srv;
+    srv.request.name = ui->mission_name_edit->text().toStdString();
+    srv.request.description = ui->mission_description_edit->text().toStdString();
+    srv.request.cad = ui->cad_edit->text().toStdString();
+    ros::ServiceClient client = n.serviceClient<mission_control::setMissionData>(UIAPI_SET_MISSION_DATA);
+    if(!client.call(srv))
+        return;
+
+    if(!srv.response.success)
+        return;
 
     //hide the edits
     ui->mission_name_edit->hide();
     ui->cad_edit->hide();
+    ui->mission_description_edit->hide();
 
     //show the labels:
     ui->mission_name->show();
     ui->cad_ref->show();
+    ui->mission_description->show();
+
+    //update the data:
+    updateMissionData();
 }
 
 void MainWindow::startTaskEdit()
@@ -575,16 +624,98 @@ void MainWindow::startTaskEdit()
     ui->taskList->setEnabled(false);
     ui->editMissionButton->setEnabled(false);
 
+    //get the task params:
+    mission_control::getTaskParams srv;
+    ros::ServiceClient client = n.serviceClient<mission_control::getTaskParams>(UIAPI_GET_TASK_PARAMS);
+    if(!client.call(srv))
+    {
+        return;
+    }
+    if(!srv.response.success)
+    {
+        return;
+    }
+
     //set the data of the edits:
     ui->task_name_edit->setText(ui->task_name_label->text());
+
+    ui->stud_dist_edit->setMaximum(srv.response.distance.max_value);
+    ui->stud_dist_edit->setMinimum(srv.response.distance.min_value);
     ui->stud_dist_edit->setValue(ui->stud_dist_label->text().toDouble());
+
+    ui->stud_proximity_edit->setMaximum(srv.response.proximity.max_value);
+    ui->stud_proximity_edit->setMinimum(srv.response.proximity.min_value);
     ui->stud_proximity_edit->setValue(ui->stud_proximity_label->text().toDouble());
 
-    //fill the distribution combo-box:
-    //...
+    ui->nav_x_edit->setMinimum(-10000.0);
+    ui->nav_x_edit->setMaximum(10000.0);
+    ui->nav_x_edit->setValue(ui->nav_x_label->text().toDouble());
 
-    //fill the stud type combobox
-    //...
+    ui->nav_y_edit->setMinimum(-10000.0);
+    ui->nav_y_edit->setMaximum(10000.0);
+    ui->nav_y_edit->setValue(ui->nav_y_label->text().toDouble());
+
+    ui->nav_yaw_edit->setMinimum(-10000.0);
+    ui->nav_yaw_edit->setMaximum(10000.0);
+    ui->nav_yaw_edit->setValue(ui->nav_yaw_label->text().toDouble());
+
+    ///Fill the distribution combo-box:
+    int index = -1;
+    int default_index = -1;
+    ui->stud_distribution_edit->clear();
+    for(int i=0;i<(int)srv.response.distributions.values.size();i++)
+    {
+        ui->stud_distribution_edit->addItem(QString::fromStdString(srv.response.distributions.values[i]));
+
+        //check if the current value in the label matches any of the options! (it should do, otherwise, there is an error!)
+        if(QString::fromStdString(srv.response.distributions.values[i]) == ui->stud_distribution_label->text())
+            index = i;
+
+        //find the default value's index
+        if(srv.response.distributions.values[i] == srv.response.distributions.default_value)
+            default_index = i;
+
+    }
+    //try to set the value to the current value:
+    if(index == -1 && default_index != -1)
+    {
+        //use default value:
+        ui->stud_distribution_edit->setCurrentIndex(default_index);
+    }
+    else if(index != -1)
+    {
+        ui->stud_distribution_edit->setCurrentIndex(index);
+    }
+    //else we dont do anything and the "default" will be what comes first. However, this should never happen.
+    //if it does, there is an error in the data received from mission controller.
+
+    ///Fill the stud type combobox
+    index = -1;
+    default_index = -1;
+    ui->stud_type_edit->clear();
+    for(int i=0;i<(int)srv.response.stud_types.values.size();i++)
+    {
+        ui->stud_type_edit->addItem(QString::fromStdString(srv.response.stud_types.values[i]));
+
+        //check if the current value in the label matches any of the options! (it should do, otherwise, there is an error!)
+        if(QString::fromStdString(srv.response.stud_types.values[i]) == ui->stud_type_label->text())
+            index = i;
+
+        //find the default value's index
+        if(srv.response.stud_types.values[i] == srv.response.stud_types.default_value)
+            default_index = i;
+
+    }
+    //try to set the value to the current value:
+    if(index == -1 && default_index != -1)
+    {
+        //use default value:
+        ui->stud_type_edit->setCurrentIndex(default_index);
+    }
+    else if(index != -1)
+    {
+        ui->stud_type_edit->setCurrentIndex(index);
+    }
 
     //hide the qlabels
     ui->task_name_label->hide();
@@ -592,6 +723,9 @@ void MainWindow::startTaskEdit()
     ui->stud_dist_label->hide();
     ui->stud_proximity_label->hide();
     ui->stud_type_label->hide();
+    ui->nav_x_label->hide();
+    ui->nav_y_label->hide();
+    ui->nav_yaw_label->hide();
 
     //show the edits
     ui->task_name_edit->show();
@@ -599,6 +733,9 @@ void MainWindow::startTaskEdit()
     ui->stud_dist_edit->show();
     ui->stud_proximity_edit->show();
     ui->stud_type_edit->show();
+    ui->nav_x_edit->show();
+    ui->nav_y_edit->show();
+    ui->nav_yaw_edit->show();
 }
 
 void MainWindow::closeTaskEdit()
@@ -610,7 +747,7 @@ void MainWindow::closeTaskEdit()
     ui->tabWidget->setTabEnabled(1,true);
     ui->tabWidget->setTabEnabled(2,true);
     ui->taskList->setEnabled(true);
-    ui->editMissionButton->setEnabled(false);
+    ui->editMissionButton->setEnabled(true);
 
     //hide the edits
     ui->task_name_edit->hide();
@@ -618,19 +755,46 @@ void MainWindow::closeTaskEdit()
     ui->stud_dist_edit->hide();
     ui->stud_proximity_edit->hide();
     ui->stud_type_edit->hide();
+    ui->nav_x_edit->hide();
+    ui->nav_y_edit->hide();
+    ui->nav_yaw_edit->hide();
 
-    //transfer data:
+    //Send data to MC
+    mission_control::setTaskData srv;
+    srv.request.name = ui->task_name_edit->text().toStdString();
+    srv.request.data.stud_type = ui->stud_type_edit->currentText().toStdString();
+    srv.request.data.stud_pattern.distance = ui->stud_dist_edit->value();
+    srv.request.data.stud_pattern.proximity = ui->stud_proximity_edit->value();
+    srv.request.data.stud_pattern.distribution = ui->stud_distribution_edit->currentText().toStdString();
+    srv.request.data.nav_goal.x = ui->nav_x_edit->value();
+    srv.request.data.nav_goal.y = ui->nav_y_edit->value();
+    srv.request.data.nav_goal.yaw = ui->nav_yaw_edit->value();
 
+    ros::ServiceClient client = n.serviceClient<mission_control::setTaskData>(UIAPI_SET_TASK_DATA);
+    if(!client.call(srv))
+        return;
 
-    //show the labels
-    ui->task_name_label->show();
-    ui->stud_distribution_label->show();
-    ui->stud_dist_label->show();
-    ui->stud_proximity_label->show();
-    ui->stud_type_label->show();
+    if(!srv.response.success)
+        return;
 
+    //update the task list:
+    updateTaskList();
 
+    //set the task list current index to the current task
+    //find the "index" of the current task:
+    for(int i=0;i<task_list_model->rowCount();i++)
+    {
+        if(task_list_model->index(i,0).data(Qt::DisplayRole).toString() == ui->task_name_edit->text())
+        {
+            ui->taskList->selectionModel()->select(task_list_model->index(i,0), QItemSelectionModel::Select);
+        }
+    }
 
+    //show the task data labels
+    showTaskParams();
+
+    //update the task data
+    updateTaskData(ui->task_name_edit->text().toStdString());
 }
 
 void MainWindow::on_editMissionButton_clicked()
@@ -657,6 +821,8 @@ void MainWindow::on_editMissionButton_clicked()
     }
     else
     {
+        closeMissionEdit();
+
         mission_control::Trigger srv;
         ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_STOP);
         if(!client.call(srv))
@@ -664,8 +830,6 @@ void MainWindow::on_editMissionButton_clicked()
 
         if(!srv.response.success)
             return;
-
-        closeMissionEdit();
     }
 }
 
@@ -687,14 +851,14 @@ void MainWindow::on_editTaskButton_clicked()
             return;
 
         if(!srv.response.success)
-        {
             return;
-        }
 
         startTaskEdit();
     }
     else
     {
+        closeTaskEdit();
+
         mission_control::Trigger srv;
         ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_STOP);
         if(!client.call(srv))
@@ -702,8 +866,6 @@ void MainWindow::on_editTaskButton_clicked()
 
         if(!srv.response.success)
             return;
-
-        closeTaskEdit();
     }
 }
 

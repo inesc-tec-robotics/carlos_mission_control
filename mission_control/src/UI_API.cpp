@@ -35,6 +35,7 @@ UiAPI::UiAPI()
     get_mission_list_srv_ = n.advertiseService(UIAPI_GET_MISSION_LIST, &UiAPI::getMissionListCB, this);
     get_mission_name_srv_ = n.advertiseService(UIAPI_GET_MISSION_NAME, &UiAPI::getMissionNameCB, this);
     get_task_data_srv_ = n.advertiseService(UIAPI_GET_TASK_DATA, &UiAPI::getTaskDataCB, this);
+    get_task_params_srv_ = n.advertiseService(UIAPI_GET_TASK_PARAMS, &UiAPI::getTaskParamsCB, this);
     exec_start_srv_ = n.advertiseService(UIAPI_EXEC_START, &UiAPI::execStartCB, this);
     exec_abort_srv_ = n.advertiseService(UIAPI_EXEC_ABORT, &UiAPI::execAbortCB, this);
     exec_pause_srv_ = n.advertiseService(UIAPI_EXEC_PAUSE_RESUME, &UiAPI::execPauseCB, this);
@@ -239,7 +240,6 @@ bool UiAPI::getMissionNameCB(mission_control::Trigger::Request &request, mission
 
 bool UiAPI::getTaskDataCB(mission_control::getTaskData::Request &request, mission_control::getTaskData::Response &response)
 {
-
     TaskData data = MissionHandler::getInstance()->getTaskData(request.name);
 
     if(request.name != data.name)
@@ -250,6 +250,45 @@ bool UiAPI::getTaskDataCB(mission_control::getTaskData::Request &request, missio
     }
 
     response.data = data.toMsg();
+    response.success = true;
+
+    return true;
+}
+
+bool UiAPI::getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response)
+{
+    //get the valid task params from database (hence, xml file)
+    // ... we will do this later ...
+
+    //stud type:
+    response.stud_types.values = boost::assign::list_of ("M3x40") ("M3x70") ("M5x90");
+    response.stud_types.default_value = "M3x70";
+
+    //distribution
+    response.distributions.values = boost::assign::list_of ("2 1 2") ("1 1 1");
+    response.distributions.default_value = "2 1 2";
+
+    //distance
+    response.distance.min_value = 70.0;
+    response.distance.max_value = 200.0;
+    response.distance.default_value = 100.0;
+
+    //proximity
+    response.distance.min_value = 50.0;
+    response.distance.max_value = 200.0;
+    response.distance.default_value = 80.0;
+
+    //force
+    response.force.min_value = 50.0;
+    response.force.max_value = 400.0;
+    response.force.default_value = 200.0;
+
+    //power
+    response.power.min_value = 1.0;
+    response.power.max_value = 250.0;
+    response.power.default_value = 56.0;
+
+    //success:
     response.success = true;
 
     return true;

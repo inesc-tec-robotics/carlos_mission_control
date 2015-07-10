@@ -25,6 +25,7 @@
 #include "mission_control/Trigger.h"
 #include "mission_control/setMissionData.h"
 #include "mission_control/setTaskData.h"
+#include "mission_control/getTaskParams.h"
 
 
 
@@ -52,6 +53,7 @@ private:
     bool getMissionDataCB(mission_control::getMissionData::Request &request, mission_control::getMissionData::Response &response);
     bool getMissionNameCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);    //message is used to return the name
     bool getTaskDataCB(mission_control::getTaskData::Request &request, mission_control::getTaskData::Response &response);
+    bool getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response); //get params for a task - including default value, range etc.
 
     bool loadMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool saveMissionCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
@@ -101,6 +103,7 @@ private:
     ros::ServiceServer get_mission_list_srv_;
     ros::ServiceServer get_mission_name_srv_;
     ros::ServiceServer get_task_data_srv_;
+    ros::ServiceServer get_task_params_srv_;
 
     //data change services
     ros::ServiceServer set_mission_data_srv_;

@@ -119,6 +119,7 @@ private:
     void updateTaskList();
 
     void updateMissionData();
+    void updateTaskData(std::string task_name);
 
     void updateInfo();
 
