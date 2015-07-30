@@ -64,6 +64,7 @@ add_action_files(
    executeWeld.action
    generateStudDistribution.action
    movePlatform.action
+   moveArm.action
    projectionPose.action
    performTeaching.action
  )
