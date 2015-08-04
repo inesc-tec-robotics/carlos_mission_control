@@ -644,7 +644,6 @@ bool MissionHandler::setMissionData(mission_control::MissionData data)
     //update/set the data:
     ros::param::set("mission/CAD", data.cad);
     ros::param::set("mission/description", data.description);
-    ros::param::set("mission/state", data.state);
 
     //save
     save();
@@ -701,7 +700,6 @@ bool MissionHandler::setStudState(string task_name, string stud_name, stud::stat
     ros::param::set(("/mission/tasks/" + task_name + "/studs/" + stud_name + "/time_stamp"), ros::Time::now().toSec());
 
     updateTaskState(task_name);
-    updateMissionState();
 
     return true;
 }
@@ -819,11 +817,7 @@ bool MissionHandler::setTaskData(string name, mission_control::TaskData data)
     ros::param::set((key + "/stud_pattern/press"), data.stud_pattern.press);
 
     //update the task state:
-    updateTaskState(name);
-
-    //no need to save - updateTaskState has just done it!
-
-    return true;
+    return updateTaskState(name);
 }
 
 bool MissionHandler::updateTaskState(string task_name)
@@ -897,10 +891,8 @@ bool MissionHandler::updateTaskState(string task_name)
 
     ros::param::set(("mission/tasks/" + task_name + "/state"), (int)task_state);
 
-    if(auto_save_)
-        save();
-
-    return true;
+    //update mission state, as changes to task state could affect mission state: (will also save)
+    return updateMissionState();
 }
 
 bool MissionHandler::addTask(mission_control::TaskData data, string name)
@@ -924,7 +916,7 @@ bool MissionHandler::addTask(mission_control::TaskData data, string name)
         {
             stringstream task_name_ss;
             task_name_ss << task_base << index;
-            bool found = true;
+            bool found = false;
 
             for(int i=0;i<(int)tasks.size();i++)
             {
@@ -971,7 +963,15 @@ bool MissionHandler::deleteTask(string task_name)
     }
 
     //delete the task:
-    return ros::param::del(("mission/tasks/" + task_name));
+    if(!ros::param::del(("mission/tasks/" + task_name)))
+        return false;
+
+    //update mission state: (deleting a task could potentially change the mission state!
+    updateMissionState();
+
+    //save? - updating mission state just did it for us!
+
+    return true;
 }
 
 string MissionHandler::getStoragePath()

@@ -60,6 +60,7 @@
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
 #include "ros_interface.hpp"
+#include "addTask.hpp"
 
 using namespace std;
 
@@ -412,8 +413,6 @@ void MainWindow::on_taskList_selection_changed(const QModelIndex &index, const Q
 
 void MainWindow::updateTaskData(string task_name)
 {
-
-    cout << "task" << task_name << endl;
     mission_control::getTaskData srv;
     srv.request.name = task_name;
     ros::ServiceClient client = n.serviceClient<mission_control::getTaskData>(UIAPI_GET_TASK_DATA);
@@ -533,6 +532,9 @@ void MainWindow::hideTaskParams()
     ui->nav_x_label->hide();
     ui->nav_y_label->hide();
     ui->nav_yaw_label->hide();
+    ui->nav_x->hide();
+    ui->nav_y->hide();
+    ui->nav_yaw->hide();
     ui->number_of_studs_label->hide();
     ui->task_state->hide();
     ui->editTaskButton->hide();
@@ -548,6 +550,9 @@ void MainWindow::showTaskParams()
     ui->nav_x_label->show();
     ui->nav_y_label->show();
     ui->nav_yaw_label->show();
+    ui->nav_x->show();
+    ui->nav_y->show();
+    ui->nav_yaw->show();
     ui->number_of_studs_label->show();
     ui->task_state->show();
     ui->editTaskButton->show();
@@ -1157,5 +1162,95 @@ void MainWindow::instrProgressUpdate(const mission_control::Progress::ConstPtr &
     updateMissionData();
 }
 
+void MainWindow::on_add_task_button_clicked()
+{
+    //go to edit mode:
+    mission_control::Trigger srv;
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_START);
+    if(!client.call(srv))
+        return;
+
+    if(!srv.response.success)
+        return;
+
+    //open add task dialog
+    AddTask dialog(this);
+    dialog.exec();
 
 
+    //exit edit mode:
+    mission_control::Trigger srv2;
+    ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_STOP);
+    if(!client2.call(srv2))
+        return;
+
+    if(!srv2.response.success)
+        return;
+
+    //update the task list:
+    updateTaskList();
+}
+
+void MainWindow::on_delete_task_button_clicked()
+{
+    //get name of selected task:
+    string task_name = ui->task_name_label->text().toStdString();
+
+    //check "are you sure"
+    //prompt user for save:
+    int button = QMessageBox::question(this,"Delete task",tr("Are you sure you want to delete \"%1\"?").arg(QString::fromStdString(task_name)),
+                                       QMessageBox::No | QMessageBox::Yes);
+
+    if (button == QMessageBox::No)
+        return;
+
+    //go to edit mode:
+    enterEditMode();
+
+    //send delete task request:
+    //go to edit mode:
+    mission_control::Trigger srv2;
+    srv2.request.input = task_name;
+    ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_DELETE_TASK);
+    if(!client2.call(srv2))
+    {
+        QMessageBox::warning(this,"Error","Failed to delete task.",QMessageBox::Ok);
+    }
+
+    if(!srv2.response.success)
+    {
+        QMessageBox::warning(this,"Error","Failed to delete task.",QMessageBox::Ok);
+    }
+
+    //exit edit mode
+    exitEditMode();
+
+    //update the task list:
+    updateTaskList();
+}
+
+bool MainWindow::enterEditMode()
+{
+    mission_control::Trigger srv;
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_START);
+    if(!client.call(srv))
+        return false;
+
+    if(!srv.response.success)
+        return false;
+
+    return true;
+}
+
+bool MainWindow::exitEditMode()
+{
+    mission_control::Trigger srv;
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EDIT_STOP);
+    if(!client.call(srv))
+        return false;
+
+    if(!srv.response.success)
+        return false;
+
+    return true;
+}

@@ -1,4 +1,5 @@
 #include "ros/node_handle.h"
+#include "ros/package.h"
 #include "mission_handler.hpp"
 #include "UI_API.hpp"
 #include "hw_state_machine.hpp"
@@ -8,6 +9,7 @@
 #include "execution_engine.hpp"
 #include "instruction_engine.hpp"
 #include "mission_control/ui_api_defines.h"
+#include "XMLOperations.hpp"
 
 #define STATE_PUB_FREQ 10.0 //publication frequency in Hz for hardware states
 #define HB_PUB_FREQ 1.0 //publication frequency in Hz for hear beat
@@ -257,36 +259,51 @@ bool UiAPI::getTaskDataCB(mission_control::getTaskData::Request &request, missio
 
 bool UiAPI::getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response)
 {
-    //get the valid task params from database (hence, xml file)
-    // ... we will do this later ...
+    //open the task_param_database.xml to find the available parameters. It is located in the root of the mission_control package)
+    XMLOperations xmlop(true);
+    if(!xmlop.openFile(ros::package::getPath("mission_control"), "task_params_database.xml"))
+    {
+        ROS_ERROR_STREAM("Failed to open task parameter database");
+        response.success = false;
+        return true;
+    }
 
     //stud type:
-    response.stud_types.values = boost::assign::list_of ("M3x40") ("M3x70") ("M5x90");
-    response.stud_types.default_value = "M3x70";
+    xmlop.goToFirstMatch("stud_type");
+    if(!xmlop.getChildrenValues(response.stud_types.values))
+    {
+    }
+    response.stud_types.default_value = xmlop.getAttribute("default").toString();
 
     //distribution
-    response.distributions.values = boost::assign::list_of ("2 1 2") ("1 1 1");
-    response.distributions.default_value = "2 1 2";
+    xmlop.goToFirstMatch("stud_distribution");
+    xmlop.getChildrenValues(response.distributions.values);
+    cout << response.distributions.values.size() << endl;
+    response.distributions.default_value = xmlop.getAttribute("default").toString();
 
     //distance
-    response.distance.min_value = 70.0;
-    response.distance.max_value = 200.0;
-    response.distance.default_value = 100.0;
+    xmlop.goToFirstMatch("stud_distance");
+    response.distance.min_value = xmlop.getAttribute("min").toDouble();
+    response.distance.max_value = xmlop.getAttribute("max").toDouble();
+    response.distance.default_value = xmlop.getAttribute("default").toDouble();
 
     //proximity
-    response.distance.min_value = 50.0;
-    response.distance.max_value = 200.0;
-    response.distance.default_value = 80.0;
+    xmlop.goToFirstMatch("stud_proximity");
+    response.proximity.min_value = xmlop.getAttribute("min").toDouble();
+    response.proximity.max_value = xmlop.getAttribute("max").toDouble();
+    response.proximity.default_value = xmlop.getAttribute("default").toDouble();
 
     //force
-    response.force.min_value = 50.0;
-    response.force.max_value = 400.0;
-    response.force.default_value = 200.0;
+    xmlop.goToFirstMatch("force");
+    response.force.min_value = xmlop.getAttribute("min").toDouble();
+    response.force.max_value = xmlop.getAttribute("max").toDouble();
+    response.force.default_value = xmlop.getAttribute("default").toDouble();
 
     //power
-    response.power.min_value = 1.0;
-    response.power.max_value = 250.0;
-    response.power.default_value = 56.0;
+    xmlop.goToFirstMatch("welding_power");
+    response.power.min_value = xmlop.getAttribute("min").toDouble();
+    response.power.max_value = xmlop.getAttribute("max").toDouble();
+    response.power.default_value = xmlop.getAttribute("default").toDouble();
 
     //success:
     response.success = true;

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0"?> 
+<task_params>
+   
+ <stud_distribution default="2-1-2">
+   <distribution0>2-1-2</distribution0>
+   <distribution1>1-1-1</distribution1>
+ </stud_distribution>
+ 
+ <stud_type default="M3x70">
+   <type0>M3x40</type0>
+   <type1>M3x70</type1>
+   <type2>M5x90</type2>
+ </stud_type>
+ 
+ <stud_distance min="70.0" max="200.0" default="100.0"/>
+ 
+ <stud_proximity min="50.0" max="200.0" default="80.0"/>
+  
+ <force min="50.0" max="400.0" default="200.0"/>
+   
+ <welding_power min="1.0" max="250.0" default="56.0"/>
+
+</task_params>
+ 

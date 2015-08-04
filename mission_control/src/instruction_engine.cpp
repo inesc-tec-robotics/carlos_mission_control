@@ -109,6 +109,9 @@ struct teach_s : public msm::front::state<>
     template <class Event,class FSM>
     void on_exit(Event const&,FSM& )
     {
+        //update task state:
+        MissionHandler::getInstance()->updateTaskState(InstructionEngine::getInstance()->getCurrentTask());
+
         ROS_INFO_STREAM("Teaching now done.");
         ROS_DEBUG("Instruction engine leaving teaching state");
     }
@@ -299,9 +302,6 @@ struct increment_task_a
     template <class FSM,class EVT,class SourceState,class TargetState>
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
-        //update task state:
-        MissionHandler::getInstance()->updateTaskState(InstructionEngine::getInstance()->getCurrentTask());
-
         //increment the task iterator
         InstructionEngine::getInstance()->task_n++;
     }
@@ -525,9 +525,6 @@ void InstructionEngine::genPosDone(vector<geometry_msgs::Point> stud_positions)
     //add the studs to the task
     addStuds(stud_positions);
 
-    //update the task-state:
-    MissionHandler::getInstance()->updateTaskState(getCurrentTask());
-
     //dispatch event to state machine
     ism_->process_event(gen_done_e());
 }
@@ -674,5 +671,8 @@ void InstructionEngine::addStuds(vector<geometry_msgs::Point> stud_positions)
     {
         MissionHandler::getInstance()->addStud(getCurrentTask(), stud_positions[i].x, stud_positions[i].y);
     }
+
+    //update task state:
+    MissionHandler::getInstance()->updateTaskState(getCurrentTask());
 }
 

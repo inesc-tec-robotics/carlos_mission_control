@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   message_generation
   mission_ctrl_msgs
+  XMLOperations
 )
 
 ## System dependencies are found with CMake's conventions
@@ -39,12 +40,14 @@ src/gui_node.cpp
 src/GUI/mainwindow.cpp
 src/GUI/loadMission.cpp
 src/GUI/ros_interface.cpp
+src/GUI/addTask.cpp
 )
 
 set(qt_hdrs
 src/GUI/mainwindow.h
 src/GUI/loadMission.hpp
 src/GUI/ros_interface.hpp
+src/GUI/addTask.hpp
 )
 
 qt4_automoc(${qt_srcs})
@@ -52,6 +55,7 @@ qt4_automoc(${qt_srcs})
 QT4_WRAP_UI(uis_h
             src/GUI/mainwindow.ui
             src/GUI/loadMission.ui
+            src/GUI/addTask.ui
             )
 
 QT4_WRAP_CPP(qt_moc_srcs ${qt_hdrs})
@@ -149,6 +153,7 @@ catkin_package(
   roslib
   message_runtime
   mission_ctrl_msgs
+  XMLOperations
   DEPENDS Boost
   )
 

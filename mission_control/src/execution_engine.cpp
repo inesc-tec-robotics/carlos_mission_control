@@ -283,7 +283,7 @@ struct increment_task_a
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
         //update task state:
-        MissionHandler::getInstance()->updateTaskState(ExecutionEngine::getInstance()->getCurrentTask());
+        //MissionHandler::getInstance()->updateTaskState(ExecutionEngine::getInstance()->getCurrentTask());
 
         //increment the task iterator
         ExecutionEngine::getInstance()->task_n++;
