@@ -1,46 +1,54 @@
 CAD: room1.cad
-name: completed
 description: This is a super duper stud welding mission
-last_saved: 1429631054.123456
+last_saved: 1435682394.0050037
+name: completed
 state: 6
 tasks:
   task_1:
-    state: 6
     nav_goal: {x: 236.78, y: 364.74, yaw: 1.24}
-    stud_pattern: {distance: 300.0, distribution: some_dist, proximity: 150.0, press: 50.0}
+    state: 6
+    stud_pattern: {distance: 300.0, distribution: some_dist, press: 50.0, proximity: 150.0}
+    stud_type: type57
+    voltage: 100.0
+    direction: 0
     studs:
       stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
       stud_3: {state: 2, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 1, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
-    stud_type: type57
   task_2:
-    state: 6
     nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
-    stud_pattern: {distance: 400.0, distribution: some_dist, proximity: 125.0, press: 50.0}
+    state: 6
+    stud_pattern: {distance: 400.0, distribution: some_dist, press: 50.0, proximity: 125.0}
+    stud_type: type89
+    voltage: 100.0
+    direction: 0
     studs:
       stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
       stud_3: {state: 1, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 1, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
-    stud_type: type89
   task_3:
-    state: 6
     nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
-    stud_pattern: {distance: 150.0, distribution: some_dist, proximity: 250.0, press: 50.0}
-    studs:
-      stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
-      stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
-      stud_3: {state: 2, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
-      stud_4: {state: 1, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
-    stud_type: type31
-  task_4:
     state: 6
-    nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
-    stud_pattern: {distance: 250.0, distribution: some_dist, proximity: 100.0, press: 50.0}
+    stud_pattern: {distance: 150.0, distribution: some_dist, press: 50.0, proximity: 250.0}
+    stud_type: type31
+    voltage: 100.0
+    direction: 0
     studs:
       stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
       stud_3: {state: 2, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 1, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
+  task_4:
+    nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
+    state: 6
+    stud_pattern: {distance: 250.0, distribution: some_dist, press: 50.0, proximity: 100.0}
     stud_type: type49
+    voltage: 100.0
+    direction: 0    
+    studs:
+      stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
+      stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
+      stud_3: {state: 2, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
+      stud_4: {state: 1, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}

@@ -9,18 +9,26 @@ tasks:
     state: 2
     stud_pattern: {distance: 300.0, distribution: some_dist, press: 50.0, proximity: 150.0}
     stud_type: type57
+    voltage: 100.0
+    direction: 0
   task_2:
     nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
     state: 2
     stud_pattern: {distance: 400.0, distribution: some_dist, press: 50.0, proximity: 125.0}
     stud_type: type89
+    voltage: 100.0
+    direction: 0
   task_3:
     nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
     state: 2
     stud_pattern: {distance: 150.0, distribution: '', press: 0.0, proximity: 0.0}
-    stud_type: ''
+    stud_type: type89
+    voltage: 100.0
+    direction: 0
   task_4:
     nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
     state: 2
     stud_pattern: {distance: 250.0, distribution: some_dist, press: 50.0, proximity: 100.0}
     stud_type: type49
+    voltage: 100.0
+    direction: 0

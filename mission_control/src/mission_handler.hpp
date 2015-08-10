@@ -110,6 +110,8 @@ struct TaskData
     mission_control::StudPattern stud_pattern;
     NavGoal navigation_goal;
     std::vector<StudPosition> studs;
+    unsigned int direction;
+    double voltage;
 };
 
 struct MissionData

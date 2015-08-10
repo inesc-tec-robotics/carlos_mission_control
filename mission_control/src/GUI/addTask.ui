@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>300</height>
+    <height>337</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,17 +51,17 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="label_6">
        <property name="text">
         <string>Force</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="label_7">
        <property name="text">
-        <string>Welding power</string>
+        <string>Voltage</string>
        </property>
       </widget>
      </item>
@@ -80,11 +80,11 @@
      <item row="5" column="1">
       <widget class="QDoubleSpinBox" name="proximity"/>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QDoubleSpinBox" name="force"/>
      </item>
-     <item row="7" column="1">
-      <widget class="QDoubleSpinBox" name="power"/>
+     <item row="8" column="1">
+      <widget class="QDoubleSpinBox" name="voltage"/>
      </item>
      <item row="1" column="1">
       <widget class="QLabel" name="label_8">
@@ -98,6 +98,16 @@
         <string>Leave blank for auto-generated name</string>
        </property>
       </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_9">
+       <property name="text">
+        <string>Direction</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QSpinBox" name="direction"/>
      </item>
     </layout>
    </item>

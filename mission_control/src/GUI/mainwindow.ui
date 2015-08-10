@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>873</width>
-    <height>624</height>
+    <height>716</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>690</x>
-      <y>540</y>
+      <y>630</y>
       <width>171</width>
       <height>51</height>
      </rect>
@@ -38,7 +38,7 @@
       <x>10</x>
       <y>210</y>
       <width>611</width>
-      <height>311</height>
+      <height>391</height>
      </rect>
     </property>
     <property name="tabPosition">
@@ -60,7 +60,7 @@
         <x>10</x>
         <y>10</y>
         <width>561</width>
-        <height>311</height>
+        <height>369</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -307,7 +307,7 @@
            </item>
           </layout>
          </item>
-         <item row="7" column="0">
+         <item row="9" column="0">
           <widget class="QLabel" name="label_10">
            <property name="font">
             <font>
@@ -320,7 +320,7 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="1">
+         <item row="9" column="1">
           <widget class="QLabel" name="number_of_studs_label">
            <property name="text">
             <string>TextLabel</string>
@@ -400,20 +400,61 @@
            </item>
           </layout>
          </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_25">
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Voltage</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_26">
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Direction</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <widget class="QLabel" name="voltage_label">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="voltage_edit"/>
+           </item>
+          </layout>
+         </item>
+         <item row="8" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_16">
+           <item>
+            <widget class="QLabel" name="direction_label">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="direction_edit"/>
+           </item>
+          </layout>
+         </item>
         </layout>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>
@@ -425,8 +466,8 @@
      <widget class="QWidget" name="verticalLayoutWidget_3">
       <property name="geometry">
        <rect>
-        <x>20</x>
-        <y>130</y>
+        <x>100</x>
+        <y>140</y>
         <width>131</width>
         <height>161</height>
        </rect>
@@ -487,8 +528,8 @@
      <widget class="QWidget" name="verticalLayoutWidget_4">
       <property name="geometry">
        <rect>
-        <x>330</x>
-        <y>130</y>
+        <x>340</x>
+        <y>140</y>
         <width>131</width>
         <height>161</height>
        </rect>
@@ -653,8 +694,8 @@
      <widget class="QWidget" name="verticalLayoutWidget_5">
       <property name="geometry">
        <rect>
-        <x>20</x>
-        <y>130</y>
+        <x>100</x>
+        <y>140</y>
         <width>131</width>
         <height>161</height>
        </rect>
@@ -715,8 +756,8 @@
      <widget class="QWidget" name="verticalLayoutWidget_7">
       <property name="geometry">
        <rect>
-        <x>160</x>
-        <y>160</y>
+        <x>340</x>
+        <y>170</y>
         <width>131</width>
         <height>101</height>
        </rect>
@@ -966,7 +1007,7 @@
       <x>630</x>
       <y>10</y>
       <width>231</width>
-      <height>511</height>
+      <height>581</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -1082,7 +1123,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>540</y>
+      <y>630</y>
       <width>661</width>
       <height>51</height>
      </rect>

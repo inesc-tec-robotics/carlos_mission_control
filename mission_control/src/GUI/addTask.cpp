@@ -46,9 +46,13 @@ AddTask::AddTask(QWidget *parent) :
     ui->force->setMinimum(srv.response.force.min_value);
     ui->force->setValue(srv.response.force.default_value);
 
-    ui->power->setMaximum(srv.response.power.max_value);
-    ui->power->setMinimum(srv.response.power.min_value);
-    ui->power->setValue(srv.response.power.default_value);
+    ui->voltage->setMaximum(srv.response.voltage.max_value);
+    ui->voltage->setMinimum(srv.response.voltage.min_value);
+    ui->voltage->setValue(srv.response.voltage.default_value);
+
+    ui->direction->setMaximum(srv.response.direction.max_value);
+    ui->direction->setMinimum(srv.response.direction.min_value);
+    ui->direction->setValue(srv.response.direction.default_value);
 
     /*
     ui->nav_x_edit->setMinimum(-10000.0);
@@ -110,7 +114,8 @@ void AddTask::on_buttonBox_accepted()
     srv.request.data.stud_pattern.proximity = ui->proximity->value();
     srv.request.data.stud_pattern.distribution = ui->distribution->currentText().toStdString();
     srv.request.data.stud_pattern.press = ui->force->value();
-    srv.request.data.stud_pattern.power = ui->power->value();
+    srv.request.data.voltage = ui->voltage->value();
+    srv.request.data.direction = ui->direction->value();
 
     ros::ServiceClient client = n.serviceClient<mission_control::setTaskData>(UIAPI_ADD_TASK);
     if(!client.call(srv))

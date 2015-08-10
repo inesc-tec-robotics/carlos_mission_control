@@ -18,7 +18,8 @@
   
  <force min="50.0" max="400.0" default="200.0"/>
    
- <welding_power min="1.0" max="250.0" default="56.0"/>
+ <voltage min="50.0" max="200.0" default="100.0"/>
+ 
+ <direction min="0" max="1" default="0"/>
 
 </task_params>
- 

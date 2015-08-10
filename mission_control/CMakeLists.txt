@@ -108,6 +108,7 @@ include_directories(${QT_INCLUDE_DIR})
    MissionData.msg
    ParamDouble.msg
    ParamString.msg
+   ParamInt.msg
  )
 
 ## Generate services in the 'srv' folder

@@ -453,6 +453,11 @@ TaskData MissionHandler::getTaskData(int index)
     ros::param::get((key + "/stud_pattern/proximity"), params.stud_pattern.proximity);
     ros::param::get((key + "/stud_pattern/distance"), params.stud_pattern.distance);
     ros::param::get((key + "/stud_pattern/press"), params.stud_pattern.press);
+    ros::param::get((key + "/voltage"), params.voltage);
+
+    int temp_direction;
+    ros::param::get((key + "/direction"), temp_direction);
+    params.direction = (unsigned int)temp_direction;
 
     int state;
     ros::param::get((key + "/state"), state);
@@ -815,6 +820,8 @@ bool MissionHandler::setTaskData(string name, mission_control::TaskData data)
     ros::param::set((key + "/stud_pattern/proximity"), data.stud_pattern.proximity);
     ros::param::set((key + "/stud_pattern/distance"), data.stud_pattern.distance);
     ros::param::set((key + "/stud_pattern/press"), data.stud_pattern.press);
+    ros::param::set((key + "/voltage"), data.voltage);
+    ros::param::set((key + "/direction"), data.direction);
 
     //update the task state:
     return updateTaskState(name);
@@ -850,11 +857,14 @@ bool MissionHandler::updateTaskState(string task_name)
     if(!ros::param::has((key + "/stud_pattern/distribution"))) {task_state = mission::PARTIALLY_CONFIGURED;} else {found++;}
     if(!ros::param::has((key + "/stud_pattern/proximity"))) {task_state = mission::PARTIALLY_CONFIGURED;} else {found++;}
     if(!ros::param::has((key + "/stud_pattern/distance"))) {task_state = mission::PARTIALLY_CONFIGURED;} else {found++;}
+    if(!ros::param::has((key + "/direction"))) {task_state = mission::PARTIALLY_CONFIGURED;} else {found++;}
+    if(!ros::param::has((key + "/voltage"))) {task_state = mission::PARTIALLY_CONFIGURED;} else {found++;}
+
 
     if(found == 0)
         task_state = mission::EMPTY;
 
-    if(found < 7)                  //hence, we not all parameters are fully configured - no need to check studs!
+    if(found < 9)                  //hence, we not all parameters are fully configured - no need to check studs!
     {
         ros::param::set(("mission/tasks/" + task_name + "/state"), (int)task_state);
         return true;
@@ -1017,6 +1027,8 @@ mission_control::TaskData TaskData::toMsg() const
     data.state_description = this->state.toString();
     data.stud_type = this->stud_type;
     data.stud_pattern = this->stud_pattern;
+    data.direction = this->direction;
+    data.voltage = this->voltage;
 
     return data;
 }

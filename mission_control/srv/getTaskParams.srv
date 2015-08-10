@@ -5,7 +5,8 @@ mission_control/ParamString stud_types
 mission_control/ParamDouble force
 mission_control/ParamDouble distance
 mission_control/ParamDouble proximity
-mission_control/ParamDouble power
+mission_control/ParamDouble voltage
+mission_control/ParamInt direction
 bool success
 string message
 

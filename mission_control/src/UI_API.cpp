@@ -260,7 +260,7 @@ bool UiAPI::getTaskDataCB(mission_control::getTaskData::Request &request, missio
 bool UiAPI::getTaskParamsCB(mission_control::getTaskParams::Request &request, mission_control::getTaskParams::Response &response)
 {
     //open the task_param_database.xml to find the available parameters. It is located in the root of the mission_control package)
-    XMLOperations xmlop(true);
+    XMLOperations xmlop(false);
     if(!xmlop.openFile(ros::package::getPath("mission_control"), "task_params_database.xml"))
     {
         ROS_ERROR_STREAM("Failed to open task parameter database");
@@ -300,10 +300,16 @@ bool UiAPI::getTaskParamsCB(mission_control::getTaskParams::Request &request, mi
     response.force.default_value = xmlop.getAttribute("default").toDouble();
 
     //power
-    xmlop.goToFirstMatch("welding_power");
-    response.power.min_value = xmlop.getAttribute("min").toDouble();
-    response.power.max_value = xmlop.getAttribute("max").toDouble();
-    response.power.default_value = xmlop.getAttribute("default").toDouble();
+    xmlop.goToFirstMatch("voltage");
+    response.voltage.min_value = xmlop.getAttribute("min").toDouble();
+    response.voltage.max_value = xmlop.getAttribute("max").toDouble();
+    response.voltage.default_value = xmlop.getAttribute("default").toDouble();
+
+    //direction
+    xmlop.goToFirstMatch("direction");
+    response.direction.min_value = xmlop.getAttribute("min").toInt();
+    response.direction.max_value = xmlop.getAttribute("max").toInt();
+    response.direction.default_value = xmlop.getAttribute("default").toInt();
 
     //success:
     response.success = true;

@@ -14,6 +14,8 @@ tasks:
       stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     stud_type: type57
+    voltage: 100.0
+    direction: 0
   task_2:
     state: 4
     nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
@@ -24,6 +26,8 @@ tasks:
       stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     stud_type: type89
+    voltage: 100.0
+    direction: 0    
   task_3:
     state: 4
     nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
@@ -34,6 +38,8 @@ tasks:
       stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     stud_type: type31
+    voltage: 100.0
+    direction: 0    
   task_4:
     state: 4
     nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
@@ -44,3 +50,5 @@ tasks:
       stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     stud_type: type49
+    voltage: 100.0
+    direction: 0    

@@ -144,6 +144,8 @@ void MainWindow::initInfoTab()
     ui->nav_x_edit->hide();
     ui->nav_y_edit->hide();
     ui->nav_yaw_edit->hide();
+    ui->voltage_edit->hide();
+    ui->direction_edit->hide();
 
     hideTaskParams();
 }
@@ -431,6 +433,8 @@ void MainWindow::updateTaskData(string task_name)
     ui->nav_yaw_label->setText(QString::number(srv.response.data.nav_goal.yaw));
     ui->number_of_studs_label->setText(QString::number(srv.response.data.number_of_studs));
     ui->task_state->setText(QString::fromStdString(srv.response.data.state_description));
+    ui->voltage_label->setText(QString::number(srv.response.data.voltage));
+    ui->direction_label->setText(QString::number(srv.response.data.direction));
 }
 
 void MainWindow::updateTaskList()
@@ -529,6 +533,8 @@ void MainWindow::hideTaskParams()
     ui->stud_dist_label->hide();
     ui->stud_proximity_label->hide();
     ui->stud_type_label->hide();
+    ui->direction_label->hide();
+    ui->voltage_label->hide();
     ui->nav_x_label->hide();
     ui->nav_y_label->hide();
     ui->nav_yaw_label->hide();
@@ -547,6 +553,8 @@ void MainWindow::showTaskParams()
     ui->stud_dist_label->show();
     ui->stud_proximity_label->show();
     ui->stud_type_label->show();
+    ui->direction_label->show();
+    ui->voltage_label->show();
     ui->nav_x_label->show();
     ui->nav_y_label->show();
     ui->nav_yaw_label->show();
@@ -647,10 +655,32 @@ void MainWindow::startTaskEdit()
     ui->stud_dist_edit->setMaximum(srv.response.distance.max_value);
     ui->stud_dist_edit->setMinimum(srv.response.distance.min_value);
     ui->stud_dist_edit->setValue(ui->stud_dist_label->text().toDouble());
+    if( srv.response.distance.max_value < ui->stud_dist_label->text().toDouble() || ui->stud_dist_label->text().toDouble() < srv.response.distance.min_value) //out of range!
+        ui->stud_dist_edit->setValue(srv.response.distance.default_value);
+    else
+        ui->stud_dist_edit->setValue(ui->stud_dist_label->text().toDouble());
 
     ui->stud_proximity_edit->setMaximum(srv.response.proximity.max_value);
     ui->stud_proximity_edit->setMinimum(srv.response.proximity.min_value);
     ui->stud_proximity_edit->setValue(ui->stud_proximity_label->text().toDouble());
+    if( srv.response.proximity.max_value < ui->stud_proximity_label->text().toDouble() || ui->stud_proximity_label->text().toDouble() < srv.response.proximity.min_value) //out of range!
+        ui->stud_proximity_edit->setValue(srv.response.proximity.default_value);
+    else
+        ui->stud_proximity_edit->setValue(ui->stud_proximity_label->text().toDouble());
+
+    ui->voltage_edit->setMaximum(srv.response.voltage.max_value);
+    ui->voltage_edit->setMinimum(srv.response.voltage.min_value);
+    if( srv.response.voltage.max_value < ui->voltage_label->text().toDouble() || ui->voltage_label->text().toDouble() < srv.response.voltage.min_value) //out of range!
+        ui->voltage_edit->setValue(srv.response.voltage.default_value);
+    else
+        ui->voltage_edit->setValue(ui->voltage_label->text().toDouble());
+
+    ui->direction_edit->setMaximum(srv.response.direction.max_value);
+    ui->direction_edit->setMinimum(srv.response.direction.min_value);
+    if( srv.response.direction.max_value < ui->direction_label->text().toInt() || ui->direction_label->text().toInt() < srv.response.direction.min_value) //out of range!
+        ui->direction_edit->setValue(srv.response.direction.default_value);
+    else
+        ui->direction_edit->setValue(ui->direction_label->text().toInt());
 
     ui->nav_x_edit->setMinimum(-10000.0);
     ui->nav_x_edit->setMaximum(10000.0);
@@ -731,6 +761,8 @@ void MainWindow::startTaskEdit()
     ui->nav_x_label->hide();
     ui->nav_y_label->hide();
     ui->nav_yaw_label->hide();
+    ui->voltage_label->hide();
+    ui->direction_label->hide();
 
     //show the edits
     ui->task_name_edit->show();
@@ -741,6 +773,8 @@ void MainWindow::startTaskEdit()
     ui->nav_x_edit->show();
     ui->nav_y_edit->show();
     ui->nav_yaw_edit->show();
+    ui->voltage_edit->show();
+    ui->direction_edit->show();
 }
 
 void MainWindow::closeTaskEdit()
@@ -763,6 +797,8 @@ void MainWindow::closeTaskEdit()
     ui->nav_x_edit->hide();
     ui->nav_y_edit->hide();
     ui->nav_yaw_edit->hide();
+    ui->voltage_edit->hide();
+    ui->direction_edit->hide();
 
     //Send data to MC
     mission_control::setTaskData srv;
@@ -774,6 +810,9 @@ void MainWindow::closeTaskEdit()
     srv.request.data.nav_goal.x = ui->nav_x_edit->value();
     srv.request.data.nav_goal.y = ui->nav_y_edit->value();
     srv.request.data.nav_goal.yaw = ui->nav_yaw_edit->value();
+    srv.request.data.direction = ui->direction_edit->value();
+    srv.request.data.voltage = ui->voltage_edit->value();
+
 
     ros::ServiceClient client = n.serviceClient<mission_control::setTaskData>(UIAPI_SET_TASK_DATA);
     if(!client.call(srv))

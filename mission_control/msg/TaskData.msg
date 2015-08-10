@@ -2,5 +2,7 @@ uint8 state
 string state_description
 int16 number_of_studs
 string stud_type
+uint8 direction
+float64 voltage
 mission_control/StudPattern stud_pattern
 mission_control/NavGoal nav_goal
