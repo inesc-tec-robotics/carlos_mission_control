@@ -1,3 +1,4 @@
+uint8 side # 0=left, 1=right
 ---
 bool succeeded
 ---

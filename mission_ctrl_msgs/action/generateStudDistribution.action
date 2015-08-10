@@ -1,4 +1,5 @@
 string task_name
+uint8 side # 0=left, 1=right
 ---
 geometry_msgs/Point[] positions
 string error_string
