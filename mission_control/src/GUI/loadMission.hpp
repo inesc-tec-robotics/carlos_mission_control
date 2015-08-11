@@ -1,3 +1,7 @@
+/* Created by Casper Schou @ AAU 2015
+ *
+ */
+
 #ifndef LOADMISSION_HPP_
 #define LOADMISSION_HPP_
 

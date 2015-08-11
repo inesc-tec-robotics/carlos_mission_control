@@ -664,7 +664,7 @@ bool MissionHandler::addStud(string task_name, double x, double y, string stud_n
         return false;
     }
 
-    if(stud_name == "auto_generate")
+    if(stud_name == "")
     {
         vector<string> studs = getStudList(task_name);
         int index = 0;

@@ -1,3 +1,7 @@
+/* Created by Casper Schou @ AAU 2015
+ *
+ */
+
 #ifndef ADDTASK_HPP_
 #define ADDTASK_HPP_
 

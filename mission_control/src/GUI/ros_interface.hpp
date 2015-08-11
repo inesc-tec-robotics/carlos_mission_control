@@ -1,3 +1,7 @@
+/* Created by Casper Schou @ AAU 2015
+ *
+ */
+
 #ifndef ROSINTERFACE_HPP_
 #define ROSINTERFACE_HPP_
 
@@ -13,10 +17,6 @@
 class RosInterface : public QThread
 {
     Q_OBJECT
-
-//public:
-//    RosInterface();
-//    ~RosInterface();
 
 signals:
     void hw_states_received(mission_control::HardwareStates msg);

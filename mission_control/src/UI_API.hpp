@@ -1,13 +1,15 @@
+/* Created by Casper Schou @ AAU 2015
+ *
+ * The mission handler does not itself incorporate an integrated UI.
+ * Instead, this class provides a set of ROS services and topics for
+ * interaction with the mission controller. Thus, this class provides an
+ * API for UIs to utilize the mission controller.
+ *
+ * This class implements a singelton pattern to make access to the same object from various classes easier
+ */
 
 #ifndef UIAPI_HPP_
 #define UIAPI_HPP_
-
-//=================================
-// Forward declared dependencies
-//=================================
-//class ExecutionEngine;
-//class SystemEngine;
-//class MissionHandler;
 
 //=================================
 // Included dependencies
@@ -27,27 +29,35 @@
 #include "mission_control/setTaskData.h"
 #include "mission_control/getTaskParams.h"
 
-
-
 class UiAPI
 {
 
 public:
     static UiAPI* getInstance();
-    //    {
-    //        static UiAPI instance;
-    //        return instance;
-    //    }
 
     ~UiAPI();
 
+    /* Trigger function for execution progress update
+     * This funciton is called from the ExecutionEngine
+     * and signals that the progress information has changed.
+     * The function will then publish the new information to the
+     * ros topic.
+     */
     void execProgressUpdate(mission_control::Progress &progress);
+
+    /* Trigger function for instruction progress update
+     * This funciton is called from the InstructionEngine
+     * and signals that the progress information has changed.
+     * The function will then publish the new information to the
+     * ros topic.
+     */
     void instrProgressUpdate(mission_control::Progress &progress);
 
 private:
 
     UiAPI();
 
+    //Callback function for ROS Service Servers:
     bool getMissionListCB(mission_control::getMissionList::Request &request, mission_control::getMissionList::Response &response);
     bool getTaskListCB(mission_control::getTaskList::Request &request, mission_control::getTaskList::Response &response);
     bool getMissionDataCB(mission_control::getMissionData::Request &request, mission_control::getMissionData::Response &response);
@@ -82,11 +92,21 @@ private:
     bool addTaskCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response);
     bool deleteTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
 
-
+    /* Callback function for state publisher timeout event.
+     * This function will publish the state of each hardware
+     * sub-system and the overall system state to a ros topic.
+     * The publication frequency is controller by the
+     * state_pub_timer_.
+     */
     void statePubTimeout(const ros::TimerEvent &event);
+
+    /* Callback function for hear beat timeout event.
+     * The UiAPI publishes a heart beat (boolean true) at
+     * a given frequency. This is used to signal any connected
+     * GUI that the system is running.
+     */
     void heartBeatPubTimeout(const ros::TimerEvent &event);
 
-    //variables
     static UiAPI* instance_;
 
     ros::NodeHandle n;
@@ -130,12 +150,14 @@ private:
     ros::ServiceServer edit_start_srv_;
     ros::ServiceServer edit_stop_srv_;
 
+    //Publishers
     ros::Publisher state_pub_;
     ros::Publisher heart_beat_pub_;
     ros::Publisher ui_message_pub_;
     ros::Publisher exec_progress_pub_;
     ros::Publisher instr_progress_pub_;
 
+    //Timers
     ros::Timer state_pub_timer_;
     ros::Timer heart_beat_pub_timer_;
 };

@@ -1,19 +1,9 @@
 #include "ros_interface.hpp"
-
 #include "ros/service_client.h"
 #include "mission_control/function_defines.h"
 #include "mission_control/ui_api_defines.h"
 
 using namespace std;
-
-//RosInterface::RosInterface()
-//{
-
-//}
-
-//RosInterface::~RosInterface()
-//{
-//}
 
 void RosInterface::run()
 {
@@ -23,7 +13,6 @@ void RosInterface::run()
     instr_progress_sub = n.subscribe(UIAPI_INSTR_PROGRESS, 10, &RosInterface::instrProgressCB, this);
 
     ros::spin();
-    cout << "UH OH" << endl;
 }
 
 void RosInterface::hwStateCB(const mission_control::HardwareStates::ConstPtr &msg)

@@ -1,3 +1,10 @@
+/* Created by Casper Schou @ AAU 2015
+ *
+ * This class handles data related to the mission and tasks.
+ * It handles all writing and reading from the parameter server,
+ * and saving and loading to/from file.
+ * It implements a singleton pattern to ensure no duplicates.
+ */
 
 #ifndef MISSIONHANDLER_HPP_
 #define MISSIONHANDLER_HPP_
@@ -17,6 +24,9 @@
 #include "mission_control/MissionData.h"
 #include "mission_control/TaskData.h"
 
+/* Making a wrapper-class of the enum for mission state.
+ * This allows for inline conversion to/from unit8 and string + comparisons.
+ */
 namespace mission
 {
 class state
@@ -83,6 +93,12 @@ private:
 
 } //end namespace
 
+/* Below is various data-container-structs used internally.
+ * These structs do duplicate some of the ros msg types,
+ * however, I decided to keep these as they are extensively used
+ * internally in the class. Though, it should be straight forward to
+ * exchange the structs with the ros msg types.
+ */
 struct StudPosition
 {
     double x;
@@ -128,34 +144,47 @@ struct MissionData
 
 class MissionHandler
 {
-    friend class SystemEngine;
-    friend class InstructionEngine;
-    friend class ExecutionEngine;
 
 public:
     static MissionHandler* getInstance();
 
     ~MissionHandler();
 
+    //Functions to set and get the auto_save flag. If auto save is enabled (default)
+    //the mission is automatically saved to file on each change.
     void setAutoSave(bool auto_save) {auto_save_ = auto_save;}
     bool getAutoSave() const {return auto_save_;}
 
+    //true if a mission is currently loaded on the param server
     bool isLoaded();
 
+    //get name of loaded mission. If no mission loaded, return empty string
     std::string getLoadedName();
 
+    /* Load a mission from the mission library with the given name.
+     * If temp is set true, the mission is loaded into a temp namespace, hence
+     * it doesn't replace any previously loaded mission.
+     * The point of the temp namespace is to be able to read the data of a
+     * mission without having to replace any already loaded mission.
+     */
     bool load(std::string name, bool temp = false);
 
+    //Save a mission to file. Missions are stored as .yaml in the mission_library folder.
     bool save(void);
 
+    //Save mission as another name.
     bool saveAs(std::string name);
 
+    //create a new mission with the given name
     bool createNew(std::string name);
 
+    //get a list of available missions
     std::vector<std::string> getListOfMissions(void);
 
+    //check if the given name corresponds to a mission in the library
     bool isMission(std::string name);
 
+    //check if the given task_name matches any of the tasks in the currently loaded mission
     bool isTask(std::string task_name);
 
     //get state of mission
@@ -189,12 +218,32 @@ public:
 
     //modify task data
     bool setTaskData(std::string name, mission_control::TaskData data);
+
+    /* Trigger the system to update the task state.
+     * Determining the task state is done automatically by the system.
+     */
     bool updateTaskState(std::string task_name);
+
+    /* add a task to the currently loaded mission.
+     * If no name is given, a name is auto-generated
+     * following the "task_<number>" convension, choosing the
+     * first available number. (counting from 1)
+     * BTW, not sure AIMEN can actually handle tasks with names
+     * NOT following the "task_<number>" convension.
+     */
     bool addTask(mission_control::TaskData data, std::string name = "");
+
+    //delete task
     bool deleteTask(std::string task_name);
 
-    //modify stud data - private so only my friends can access!
-    bool addStud(std::string task_name, double x, double y, std::string stud_name = "auto_generate");
+    /* add a stud to the given task in the currently loaded mission.
+     * If no name is given, a name is auto-generated
+     * following the "stud_<number>" convension, choosing the
+     * first available number. (counting from 1)
+     */
+    bool addStud(std::string task_name, double x, double y, std::string stud_name = "");
+
+    //change the state of a stud.
     bool setStudState(std::string task_name, std::string stud_name, stud::states state);
 
 private:
@@ -206,10 +255,10 @@ private:
     void close();
     void closeTemp();
 
-    //get path to the mission library
+    //get path to the mission library - it is a folder in the mission_control package
     std::string getStoragePath();
 
-    //auto save flag
+    //auto save flag - usage described above.
     bool auto_save_;
 
 };
