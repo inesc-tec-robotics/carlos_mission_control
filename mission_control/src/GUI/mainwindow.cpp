@@ -116,6 +116,9 @@ void MainWindow::initUI()
     ui->cad_edit->hide();
     ui->mission_description_edit->hide();
 
+    //remove the generate tasks button
+    ui->gen_tasks_button->hide();
+
     //init the tabs:
     initInfoTab();
     initExecuteTab();
@@ -237,6 +240,8 @@ void MainWindow::createNew()
         QMessageBox::warning(this,"Create new failed","Failed to call create new service",QMessageBox::Ok);
         return;
     }
+
+    updateInfo();
 }
 
 void MainWindow::load()
@@ -457,11 +462,13 @@ void MainWindow::updateTaskList()
         task_list_model->appendRow(new QStandardItem(QString::fromStdString(task_list[i])));
     }
 
-    //    if(task_list.size() == 0)
-    //        hideTaskParams();
-    //    else
-    //        showTaskParams();
+    //show/hide auto-gen button
+    if((task_list.size() == 0) && (ui->mission_name->text().toStdString() != "<no mission>"))
+        ui->gen_tasks_button->show();
+    else
+        ui->gen_tasks_button->hide();
 
+    //hide/show task params
     if(ui->taskList->selectionModel()->selectedIndexes().size() < 1)
         hideTaskParams();
     else
@@ -487,11 +494,15 @@ void MainWindow::updateMissionData()
         ui->last_saved->setText("");
         hideTaskParams();
         ui->editMissionButton->hide();
+        ui->add_task_button->hide();
         return;
     }
 
     //a mission is loaded. Show the "edit" button
     ui->editMissionButton->show();
+
+    //show the "add task" button
+    ui->add_task_button->show();
 
     mission_control::getMissionData srv2;
     ros::ServiceClient client2 = n.serviceClient<mission_control::getMissionData>(UIAPI_GET_MISSION_DATA);
@@ -544,6 +555,7 @@ void MainWindow::hideTaskParams()
     ui->number_of_studs_label->hide();
     ui->task_state->hide();
     ui->editTaskButton->hide();
+    ui->delete_task_button->hide();
 }
 
 void MainWindow::showTaskParams()
@@ -564,6 +576,7 @@ void MainWindow::showTaskParams()
     ui->number_of_studs_label->show();
     ui->task_state->show();
     ui->editTaskButton->show();
+    ui->delete_task_button->show();
 }
 
 void MainWindow::startMissionEdit()
@@ -1236,7 +1249,6 @@ void MainWindow::on_delete_task_button_clicked()
     string task_name = ui->task_name_label->text().toStdString();
 
     //check "are you sure"
-    //prompt user for save:
     int button = QMessageBox::question(this,"Delete task",tr("Are you sure you want to delete \"%1\"?").arg(QString::fromStdString(task_name)),
                                        QMessageBox::No | QMessageBox::Yes);
 
@@ -1247,7 +1259,6 @@ void MainWindow::on_delete_task_button_clicked()
     enterEditMode();
 
     //send delete task request:
-    //go to edit mode:
     mission_control::Trigger srv2;
     srv2.request.input = task_name;
     ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_DELETE_TASK);
@@ -1292,4 +1303,40 @@ bool MainWindow::exitEditMode()
         return false;
 
     return true;
+}
+
+
+
+void MainWindow::on_gen_tasks_button_clicked()
+{
+    //check "are you sure"
+    //prompt user for verification:
+    int button = QMessageBox::question(this,"Auto-generate tasks",tr("This will auto-generate a number of tasks. Are you sure?"),
+                                       QMessageBox::No | QMessageBox::Yes);
+
+    if (button == QMessageBox::No)
+        return;
+
+    //go to edit mode:
+    enterEditMode();
+
+    //send delete task request:
+    mission_control::Trigger srv2;
+    ros::ServiceClient client2 = n.serviceClient<mission_control::Trigger>(UIAPI_GEN_TASKS);
+    if(!client2.call(srv2))
+    {
+        QMessageBox::warning(this,"Error","Failed to call service for auto-generate tasks.",QMessageBox::Ok);
+    }
+
+    if(!srv2.response.success)
+    {
+        QMessageBox::warning(this,"Error","Failed to auto-generate tasks.",QMessageBox::Ok);
+    }
+
+    //exit edit mode
+    exitEditMode();
+
+    //update the task list:
+    updateTaskList();
+
 }

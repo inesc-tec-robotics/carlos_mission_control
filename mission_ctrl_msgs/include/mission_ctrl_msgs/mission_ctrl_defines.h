@@ -13,6 +13,7 @@
 #define CARLOS_STUDS_PRJ_MSG  "/carlos/studs_projector"
 
 /* Services */
+#define CARLOS_INIT_GOAL_GEN_SRV   "/initial_goals/set_goals_params"
 
 /* Actions */
 #define CARLOS_WELD_ACTION         "/carlos/execute_weld"

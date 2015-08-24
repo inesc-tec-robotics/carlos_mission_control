@@ -71,6 +71,8 @@ private slots:
 
     void on_delete_task_button_clicked();
 
+    void on_gen_tasks_button_clicked();
+
 public slots:
     void execProgressUpdate(const mission_control::Progress::ConstPtr &msg);
     void instrProgressUpdate(const mission_control::Progress::ConstPtr &msg);

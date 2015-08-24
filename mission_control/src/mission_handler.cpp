@@ -3,9 +3,15 @@
 
 #include "ros/param.h"
 #include "ros/package.h"
+#include "ros/node_handle.h"
 #include <boost/filesystem.hpp>
 #include <sys/stat.h>
 #include <sstream>
+#include "ros/service_client.h"
+#include "std_srvs/Empty.h"
+#include "mission_ctrl_msgs/mission_ctrl_defines.h"
+#include "mission_control/Trigger.h"
+#include "XMLOperations.hpp"
 
 #include "mission_handler.hpp"
 
@@ -705,6 +711,96 @@ bool MissionHandler::setStudState(string task_name, string stud_name, stud::stat
     ros::param::set(("/mission/tasks/" + task_name + "/studs/" + stud_name + "/time_stamp"), ros::Time::now().toSec());
 
     updateTaskState(task_name);
+
+    return true;
+}
+
+bool MissionHandler::setTaskParamsDefault(string task_name)
+{
+    ROS_DEBUG_STREAM("MissionHandler::setTaskParamsDefault - task_name: " << task_name);
+
+    //open the task_param_database.xml to find the available parameters. It is located in the root of the mission_control package)
+    XMLOperations xmlop(false);
+    if(!xmlop.openFile(ros::package::getPath("mission_control"), "task_params_database.xml"))
+    {
+        ROS_ERROR_STREAM("Failed to open task parameter database");
+        return false;
+    }
+
+    //key to the task namespace on paramserver
+    string key = "mission/tasks/" + task_name;
+
+    ///UPDATE TASK PARAMS TO DEFAULT
+
+    //stud type:
+    xmlop.goToFirstMatch("stud_type");
+    ros::param::set((key + "/stud_type"), xmlop.getAttribute("default").toString());
+
+    //distribution
+    xmlop.goToFirstMatch("stud_distribution");
+    ros::param::set((key + "/stud_pattern/distribution"), xmlop.getAttribute("default").toString());
+
+    //distance
+    xmlop.goToFirstMatch("stud_distance");
+    ros::param::set((key + "/stud_pattern/distance"), xmlop.getAttribute("default").toDouble());
+
+
+    //proximity
+    xmlop.goToFirstMatch("stud_proximity");
+    ros::param::set((key + "/stud_pattern/proximity"), xmlop.getAttribute("default").toDouble());
+
+    //force
+    xmlop.goToFirstMatch("force");
+    ros::param::set((key + "/stud_pattern/press"), xmlop.getAttribute("default").toDouble());
+
+    //power
+    xmlop.goToFirstMatch("voltage");
+    ros::param::set((key + "/voltage"), xmlop.getAttribute("default").toDouble());
+
+    //direction
+    xmlop.goToFirstMatch("direction");
+    ros::param::set((key + "/direction"), xmlop.getAttribute("default").toInt());
+
+    //update the task state:
+    return updateTaskState(task_name);
+}
+
+bool MissionHandler::autoGenTasks()
+{
+    ROS_DEBUG("MissionHandler::autoGenTasks");
+
+    //check if mission is loaded
+    if(!isLoaded())
+        return false;
+
+    if(getTaskList().size() > 0)   //hence, contains tasks
+    {
+        ROS_WARN("Cannot auto-generate tasks. Mission already contains tasks.");
+        return false;
+    }
+
+    ros::NodeHandle n;
+    mission_control::Trigger srv;
+    ros::ServiceClient client = n.serviceClient<std_srvs::Empty>(CARLOS_INIT_GOAL_GEN_SRV);
+
+    if(!client.waitForExistence(ros::Duration(2.0)))
+    {
+        ROS_ERROR("Auto-generate tasks service not available. Timeout on connection.");
+        return false;
+    }
+
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Auto-generation of tasks failed");
+        return false;
+    }
+
+    //tasks has been generated. Now do set all params to "default" for all tasks
+    vector<string> tasks = getTaskList();
+    for(int i=0;i<(int)tasks.size();i++)
+    {
+        setTaskParamsDefault(tasks[i]);
+    }
 
     return true;
 }

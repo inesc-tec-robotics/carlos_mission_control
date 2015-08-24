@@ -219,6 +219,9 @@ public:
     //modify task data
     bool setTaskData(std::string name, mission_control::TaskData data);
 
+    //set task data to default (all but nav_goal)
+    bool setTaskParamsDefault(std::string task_name);
+
     /* Trigger the system to update the task state.
      * Determining the task state is done automatically by the system.
      */
@@ -245,6 +248,14 @@ public:
 
     //change the state of a stud.
     bool setStudState(std::string task_name, std::string stud_name, stud::states state);
+
+    /* Request "platform-system" to auto-generate initial goals and thus tasks.
+     * Not entirely sure if this function fits here in mission control, but couldn't find a
+     * better suited place at the moment. Also, since the service call to the platform will
+     * change data on param server, this could be the argument for putting it here.
+     */
+    bool autoGenTasks();
+
 
 private:
 

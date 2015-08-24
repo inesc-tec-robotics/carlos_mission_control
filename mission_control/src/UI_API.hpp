@@ -91,6 +91,7 @@ private:
     bool setTaskDataCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response);
     bool addTaskCB(mission_control::setTaskData::Request &request, mission_control::setTaskData::Response &response);
     bool deleteTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool genTasksCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
 
     /* Callback function for state publisher timeout event.
      * This function will publish the state of each hardware
@@ -129,6 +130,7 @@ private:
     ros::ServiceServer set_mission_data_srv_;
     ros::ServiceServer set_task_data_srv_;
     ros::ServiceServer add_task_data_srv_;
+    ros::ServiceServer gen_tasks_srv_;
     ros::ServiceServer delete_task_srv_;
 
     //execution control services

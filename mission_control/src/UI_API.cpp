@@ -55,6 +55,7 @@ UiAPI::UiAPI()
     set_task_data_srv_ = n.advertiseService(UIAPI_SET_TASK_DATA, &UiAPI::setTaskDataCB, this);
     add_task_data_srv_ = n.advertiseService(UIAPI_ADD_TASK, &UiAPI::addTaskCB, this);
     delete_task_srv_ = n.advertiseService(UIAPI_DELETE_TASK, &UiAPI::deleteTaskCB, this);
+    gen_tasks_srv_ = n.advertiseService(UIAPI_GEN_TASKS, &UiAPI::genTasksCB, this);
 
 
     ROS_INFO("ROS ServiceServers for UI API started");
@@ -573,6 +574,29 @@ bool UiAPI::deleteTaskCB(mission_control::Trigger::Request &request, mission_con
 
     response.success = MissionHandler::getInstance()->deleteTask(request.input);
     response.message = "Failed to delete task";
+
+    return true;
+}
+
+bool UiAPI::genTasksCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    ROS_DEBUG_STREAM("autoGenTasksCB");
+
+    //check with system engine, if edit is allowed!
+    if(!SystemEngine::getInstance()->isEditAllowed())
+    {
+        response.success = false;
+        response.message = "Not in edit mode";
+        return true;
+    }
+
+    //request auto-generate
+    response.success = MissionHandler::getInstance()->autoGenTasks();
+
+    if(!response.success)
+        response.message = "Failed to auto-generate tasks";
+    else
+        response.message = "success";
 
     return true;
 }

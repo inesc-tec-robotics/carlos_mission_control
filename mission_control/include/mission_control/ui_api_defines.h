@@ -33,6 +33,7 @@
 #define UIAPI_SET_MISSION_DATA      "mission_control/UI/setMissionData"
 #define UIAPI_ADD_TASK              "mission_control/UI/addTask"
 #define UIAPI_DELETE_TASK           "mission_control/UI/deleteTask"
+#define UIAPI_GEN_TASKS             "mission_control/UI/generateTasks"
 
 
 /* ROS Publisher namespaces */
