@@ -1336,7 +1336,7 @@ void MainWindow::on_gen_tasks_button_clicked()
     //exit edit mode
     exitEditMode();
 
-    //update the task list:
-    updateTaskList();
+    //update mission info and task list:
+    updateInfo();
 
 }

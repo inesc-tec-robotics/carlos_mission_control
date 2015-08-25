@@ -780,7 +780,7 @@ bool MissionHandler::autoGenTasks()
     }
 
     ros::NodeHandle n;
-    mission_control::Trigger srv;
+    std_srvs::Empty srv;
     ros::ServiceClient client = n.serviceClient<std_srvs::Empty>(CARLOS_INIT_GOAL_GEN_SRV);
 
     if(!client.waitForExistence(ros::Duration(2.0)))
