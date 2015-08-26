@@ -50,13 +50,15 @@ struct skip_task_e{};
 //system events
 struct nav_done_e {};
 struct mani_done_e {};
-struct nav_fail_e {};
+struct nav_fail_e
+{
+    nav_fail_e(string description) : error_((description == "" ? "unknown" : description)) {}
+    string error_;
+};
 struct weld_fail_e
 {
-    //content of event no longer needed - but will remain until development concludes!
-    weld_fail_e() : stud_name_("none"){}
-    weld_fail_e(string stud_name) : stud_name_(stud_name){}
-    string stud_name_;
+    weld_fail_e(string description) : error_((description == "" ? "unknown" : description)){}
+    string error_;
 };
 struct task_error_e {}; //event for other task errors than welding failed
 struct hw_fail_e {};
@@ -83,7 +85,7 @@ struct nav_error_s : public msm::front::state<>
 
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const&,FSM& )
+    void on_entry(Event const& e,FSM& )
     {
         ExecutionEngine::getInstance()->current_state_ = ExecState::NAV_ERROR;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
@@ -94,6 +96,7 @@ struct nav_error_s : public msm::front::state<>
 
         ROS_DEBUG("Execution engine entering navigation error state");
         ROS_INFO_STREAM("Navigation error in task " << ExecutionEngine::getInstance()->getCurrentTask());
+        ROS_INFO_STREAM("Error reported from platform: " << e.error_);
     }
 
     template <class Event,class FSM>
@@ -114,7 +117,7 @@ struct weld_error_s : public msm::front::state<>
 
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const& ,FSM& )
+    void on_entry(Event const& e, FSM& )
     {
         ExecutionEngine::getInstance()->current_state_ = ExecState::WELD_ERROR;
         ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
@@ -130,6 +133,7 @@ struct weld_error_s : public msm::front::state<>
 
         ROS_DEBUG("Execution engine entering weld error state");
         ROS_INFO_STREAM("Welding error in task " << ExecutionEngine::getInstance()->getCurrentTask() << " for stud " << failed_stud_name_);
+        ROS_INFO_STREAM("Error reported from arm control: " << e.error_);
     }
 
     template <class Event,class FSM>
@@ -531,9 +535,9 @@ void ExecutionEngine::maniDone()
     esm_->process_event(mani_done_e());
 }
 
-void ExecutionEngine::maniFailed()
+void ExecutionEngine::maniFailed(string description)
 {
-    esm_->process_event(weld_fail_e());
+    esm_->process_event(weld_fail_e(description));
 }
 
 void ExecutionEngine::maniActive()
@@ -557,9 +561,9 @@ void ExecutionEngine::navDone()
     esm_->process_event(nav_done_e());
 }
 
-void ExecutionEngine::navFailed()
+void ExecutionEngine::navFailed(string description)
 {
-    esm_->process_event(nav_fail_e());
+    esm_->process_event(nav_fail_e(description));
 }
 
 void ExecutionEngine::navActive()

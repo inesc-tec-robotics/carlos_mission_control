@@ -212,6 +212,9 @@ public:
     std::vector<std::string> getStudList(std::string task_name);
     std::vector<std::string> getPendingStuds(std::string task_name);
 
+    //get direction (side) parameter
+    int getDirection(std::string task_name);
+
     //modify mission data
     bool setMissionData(mission_control::MissionData data);
     bool updateMissionState();

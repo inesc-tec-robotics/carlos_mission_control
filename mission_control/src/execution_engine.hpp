@@ -183,11 +183,11 @@ private:
 
     //functions NOT offered to the user (only to my friend ActionInterface - he's a well-behaved guy!)
     void maniDone();
-    void maniFailed();
+    void maniFailed(std::string description);
     void maniActive();
     void maniFeedback(std::string stud, bool success);
     void navDone();
-    void navFailed();
+    void navFailed(std::string description);
     void navActive();
     void navFeedback();
     void goalCancelled();

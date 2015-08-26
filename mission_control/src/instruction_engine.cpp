@@ -50,11 +50,23 @@ struct skip_task_e{};
 
 //system events
 struct nav_done_e{};
-struct nav_fail_e{};
+struct nav_fail_e
+{
+    nav_fail_e(string description) : error_((description == "" ? "unknown" : description)) {}
+    string error_;
+};
 struct gen_done_e {};
 struct teach_done_e {};
-struct gen_fail_e {};
-struct teach_fail_e {};
+struct gen_fail_e
+{
+    gen_fail_e(string description) : error_((description == "" ? "unknown" : description)) {}
+    string error_;
+};
+struct teach_fail_e
+{
+    teach_fail_e(string description) : error_((description == "" ? "unknown" : description)) {}
+    string error_;
+};
 struct task_error_e {}; //event for other task errors than welding failed
 struct hw_fail_e {};
 struct cancelled_e{};
@@ -225,7 +237,7 @@ struct gen_error_s : public msm::front::state<>
 {
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const& event,FSM& )
+    void on_entry(Event const& e,FSM& )
     {
         InstructionEngine::getInstance()->current_state_ = InstrState::GEN_POS_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
@@ -236,6 +248,7 @@ struct gen_error_s : public msm::front::state<>
 
         ROS_DEBUG("Instruction engine entering generate position error state");
         ROS_INFO_STREAM("Generate stud position error in task " << InstructionEngine::getInstance()->getCurrentTask());
+        ROS_INFO_STREAM("Error reported from arm control: " << e.error_);
     }
 
     template <class Event,class FSM>
@@ -249,7 +262,7 @@ struct teach_error_s : public msm::front::state<>
 {
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const& event,FSM& )
+    void on_entry(Event const& e,FSM& )
     {
         InstructionEngine::getInstance()->current_state_ = InstrState::TEACH_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
@@ -260,6 +273,7 @@ struct teach_error_s : public msm::front::state<>
 
         ROS_DEBUG("Instruction engine entering teaching error state");
         ROS_INFO_STREAM("Teaching error in task " << InstructionEngine::getInstance()->getCurrentTask());
+        ROS_INFO_STREAM("Error reported from prodisp: " << e.error_);
     }
 
     template <class Event,class FSM>
@@ -273,7 +287,7 @@ struct nav_error_s : public msm::front::state<>
 {
     // every (optional) entry/exit methods get the event passed.
     template <class Event,class FSM>
-    void on_entry(Event const& event,FSM& )
+    void on_entry(Event const& e,FSM& )
     {
         InstructionEngine::getInstance()->current_state_ = InstrState::NAV_ERROR;
         InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of
@@ -284,6 +298,7 @@ struct nav_error_s : public msm::front::state<>
 
         ROS_DEBUG("Instruction engine entering navigation error state");
         ROS_INFO_STREAM("Navigation error in task " << InstructionEngine::getInstance()->getCurrentTask());
+        ROS_INFO_STREAM("Error reported from platform: " << e.error_);
     }
 
     template <class Event,class FSM>
@@ -510,9 +525,9 @@ void InstructionEngine::teachDone()
     ism_->process_event(teach_done_e());
 }
 
-void InstructionEngine::teachFailed()
+void InstructionEngine::teachFailed(string description)
 {
-    ism_->process_event(teach_fail_e());
+    ism_->process_event(teach_fail_e(description));
 }
 
 void InstructionEngine::teachFeedback()
@@ -529,9 +544,9 @@ void InstructionEngine::genPosDone(vector<geometry_msgs::Point> stud_positions)
     ism_->process_event(gen_done_e());
 }
 
-void InstructionEngine::genPosFailed()
+void InstructionEngine::genPosFailed(string description)
 {
-    ism_->process_event(gen_fail_e());
+    ism_->process_event(gen_fail_e(description));
 }
 
 void InstructionEngine::genPosFeedback()
@@ -544,9 +559,9 @@ void InstructionEngine::navDone()
     ism_->process_event(nav_done_e());
 }
 
-void InstructionEngine::navFailed()
+void InstructionEngine::navFailed(string description)
 {
-    ism_->process_event(nav_fail_e());
+    ism_->process_event(nav_fail_e(description));
 }
 
 void InstructionEngine::goalCancelled()

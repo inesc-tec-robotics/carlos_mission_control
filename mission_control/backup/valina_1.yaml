@@ -1,0 +1,83 @@
+CAD: ''
+description: mission for demo at valina august15
+last_saved: 1440503430.5010743
+name: valina_1
+state: 2
+tasks:
+  task001:
+    direction: 1
+    nav_goal: {x: 5.35, y: 4.15, yaw: 3.14}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 0.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task002:
+    direction: 1.0
+    nav_goal: {x: 4.749999897181988, y: 4.149999891594052, yaw: 3.141592653589793}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task003:
+    direction: 1.0
+    nav_goal: {x: 4.149999910593033, y: 4.149999891594052, yaw: 3.141592653589793}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task004:
+    direction: 1.0
+    nav_goal: {x: 3.549999924004078, y: 4.149999891594052, yaw: 3.141592653589793}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task005:
+    direction: 1.0
+    nav_goal: {x: 2.949999937415123, y: 4.149999891594052, yaw: 3.141592653589793}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task006:
+    direction: 1.0
+    nav_goal: {x: 2.329999951273203, y: 4.149999891594052, yaw: 3.141592653589793}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task007:
+    direction: 1.0
+    nav_goal: {x: 0.8499999966472387, y: 3.5099999248981475, yaw: -1.5707963267948963}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task008:
+    direction: 1.0
+    nav_goal: {x: 0.8499999966472387, y: 2.9099999383091926, yaw: -1.5707963267948963}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task009:
+    direction: 1.0
+    nav_goal: {x: 0.889999995753169, y: 2.3099999517202376, yaw: -1.5707963267948963}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task010:
+    direction: 1.0
+    nav_goal: {x: 0.889999995753169, y: 1.7099999651312827, yaw: -1.5707963267948963}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0
+  task011:
+    direction: 1.0
+    nav_goal: {x: 0.9299999948590993, y: 1.0699999794363975, yaw: -1.5707963267948963}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 200.0, proximity: 80.0}
+    stud_type: M3x70
+    voltage: 100.0

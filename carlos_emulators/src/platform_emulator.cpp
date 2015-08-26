@@ -64,7 +64,7 @@ void moveActionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
         else if(input == "1")
         {
             result.result_state = false;
-            result.error_string = "welding task failed";
+            result.error_string = "Belt track 1 resolved to LOST";
             move_server_->setAborted(result);
             state_ = hardware::IDLE;
             return;

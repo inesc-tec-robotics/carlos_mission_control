@@ -606,6 +606,31 @@ vector<string> MissionHandler::getPendingStuds(string task_name)
     return pending_studs;
 }
 
+int MissionHandler::getDirection(string task_name)
+{
+    //check that a mission is loaded:
+    if(!isLoaded())
+    {
+        ROS_ERROR_STREAM("Cannot get direction parameter. No mission loaded.");
+        return -1;
+    }
+
+    //check that task exists:
+    vector<string> tasks = getTaskList();
+
+    if(!ros::param::has(("mission/tasks/" + task_name)))
+    {
+        ROS_ERROR_STREAM("Failed to get direction. Task: " << task_name << " doesn't exist in mission: " << getLoadedName());
+        return -1;
+    }
+
+    int direction = -1;
+
+    ros::param::get(("mission/tasks/" + task_name + "/studs"), direction);
+
+    return direction;
+}
+
 bool MissionHandler::setMissionData(mission_control::MissionData data)
 {
     //check that a mission is loaded:

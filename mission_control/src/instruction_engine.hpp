@@ -186,13 +186,13 @@ private:
 
     //functions NOT offered to the user (only to my friend ActionInterface - he's a well-behaved guy!)
     void teachDone();
-    void teachFailed();
+    void teachFailed(std::string description);
     void teachFeedback();
     void genPosDone(std::vector<geometry_msgs::Point> stud_positions);
-    void genPosFailed();
+    void genPosFailed(std::string description);
     void genPosFeedback();
     void navDone();
-    void navFailed();
+    void navFailed(std::string description);
     void goalCancelled();
     void hardwareError();
 };

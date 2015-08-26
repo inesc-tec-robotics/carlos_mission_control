@@ -1305,8 +1305,6 @@ bool MainWindow::exitEditMode()
     return true;
 }
 
-
-
 void MainWindow::on_gen_tasks_button_clicked()
 {
     //check "are you sure"

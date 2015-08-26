@@ -145,6 +145,12 @@ void ActionInterface::sendGenPosGoal(string task_name)
 
     mission_ctrl_msgs::generateStudDistributionGoal goal;
     goal.task_name = task_name;
+    goal.side = MissionHandler::getInstance()->getDirection(task_name);
+    if(goal.side < 0)
+    {
+        ROS_ERROR("Direction parameter corrupted. Cannot send GenPosGoal!");
+        return;
+    }
 
     gen_pos_client_->sendGoal(
                 goal,
@@ -207,21 +213,21 @@ void ActionInterface::platformFinishedCB(const actionlib::SimpleClientGoalState 
         break;
     case actionlib::SimpleClientGoalState::ABORTED:
         if(ee_)
-            ee_->navFailed();
+            ee_->navFailed(result->error_string);
         if(ie_)
-            ie_->navFailed();
+            ie_->navFailed(result->error_string);
         break;
     case actionlib::SimpleClientGoalState::LOST:
         if(ee_)
-            ee_->navFailed();
+            ee_->navFailed("Communication error");
         if(ie_)
-            ie_->navFailed();
+            ie_->navFailed("Communication error");
         break;
     default:
         if(ee_)
-            ee_->navFailed();
+            ee_->navFailed("unknown");
         if(ie_)
-            ie_->navFailed();
+            ie_->navFailed("unknown");
         break;
     }
 }
@@ -249,13 +255,13 @@ void ActionInterface::armFinishedCB(const actionlib::SimpleClientGoalState &stat
         ee_->goalCancelled();
         break;
     case actionlib::SimpleClientGoalState::ABORTED:
-        ee_->maniFailed();
+        ee_->maniFailed(result->error_string);
         break;
     case actionlib::SimpleClientGoalState::LOST:
-        ee_->maniFailed();
+        ee_->maniFailed("Communication error");
         break;
     default:
-        ee_->maniFailed();
+        ee_->maniFailed("Unknown");
         break;
     }
 
@@ -283,13 +289,13 @@ void ActionInterface::teachFinishedCB(const actionlib::SimpleClientGoalState &st
         ie_->goalCancelled();
         break;
     case actionlib::SimpleClientGoalState::ABORTED:
-        ie_->teachFailed();
+        ie_->teachFailed(result->description);
         break;
     case actionlib::SimpleClientGoalState::LOST:
-        ie_->teachFailed();
+        ie_->teachFailed("Communication error");
         break;
     default:
-        ie_->teachFailed();
+        ie_->teachFailed("Unknown");
         break;
     }
 }
@@ -314,13 +320,13 @@ void ActionInterface::genPosFinishedCB(const actionlib::SimpleClientGoalState &s
         ie_->goalCancelled();
         break;
     case actionlib::SimpleClientGoalState::ABORTED:
-        ie_->genPosFailed();
+        ie_->genPosFailed(result->error_string);
         break;
     case actionlib::SimpleClientGoalState::LOST:
-        ie_->genPosFailed();
+        ie_->genPosFailed("Communication error");
         break;
     default:
-        ie_->genPosFailed();
+        ie_->genPosFailed("Unknown");
         break;
     }
 }
