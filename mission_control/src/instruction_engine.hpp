@@ -132,6 +132,7 @@ public:
     bool start();
     bool pause();
     bool abort();
+    bool kill();
     bool skipTask();
     bool retry();
 

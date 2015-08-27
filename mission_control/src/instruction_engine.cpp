@@ -47,6 +47,7 @@ struct pause_e {};
 struct abort_e {};
 struct retry_e{};
 struct skip_task_e{};
+struct kill_e{};
 
 //system events
 struct nav_done_e{};
@@ -168,8 +169,7 @@ struct wait_cancel_s : public msm::front::state<>
     void on_entry(Event const& event,FSM& )
     {
         InstructionEngine::getInstance()->current_state_ = InstrState::WAIT_CANCEL;
-        vector<string> temp;
-        InstructionEngine::getInstance()->setEnabledFunctions(temp);
+        InstructionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (INSTR_KILL) );
         InstructionEngine::getInstance()->sendProgressUpdate();
 
         ROS_DEBUG("Instruction engine entering wait for cancel state");
@@ -341,6 +341,14 @@ struct cancel_goals_a
         InstructionEngine::getInstance()->aci_->cancelInstrGoals();
     }
 };
+struct kill_goals_a
+{
+    template <class FSM,class EVT,class SourceState,class TargetState>
+    void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
+    {
+        InstructionEngine::getInstance()->aci_->removeInstrGoals();
+    }
+};
 
 ////////////////////////////
 /// Transition guards
@@ -473,7 +481,8 @@ struct InstructionStateMachine_ : public msm::front::state_machine_def<Instructi
             Row < wait_cancel_s,        nav_fail_e,         stopped_s,      none,                       none                >,
             Row < wait_cancel_s,        teach_fail_e,       stopped_s,      none,                       none                >,
             Row < wait_cancel_s,        gen_fail_e,         stopped_s,      none,                       none                >,
-            Row < wait_cancel_s,        hw_fail_e,          stopped_s,      none,                       none                >
+            Row < wait_cancel_s,        hw_fail_e,          stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        kill_e,             stopped_s,      kill_goals_a,               none                >
             > {};
 
     // Replaces the default no-transition response.
@@ -590,6 +599,12 @@ bool InstructionEngine::abort()
     return (ism_->process_event(abort_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
+bool InstructionEngine::kill()
+{
+    return (ism_->process_event(kill_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
+
 bool InstructionEngine::skipTask()
 {
     return (ism_->process_event(skip_task_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
@@ -649,7 +664,8 @@ void InstructionEngine::setEnabledFunctions(std::vector<string> functions)
             (INSTR_ABORT, false)
             (INSTR_PAUSE, false)
             (INSTR_RETRY, false)
-            (INSTR_SKIP_TASK, false);
+            (INSTR_SKIP_TASK, false)
+            (INSTR_KILL, false);
     for(int i=0;i<(int)functions.size();i++)
     {
         enabled_functions[functions[i]] = true;

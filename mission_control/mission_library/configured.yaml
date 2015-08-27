@@ -1,59 +1,20 @@
 CAD: room1.cad
-description: This is a stud welding mission
-last_saved: 1440601256.4685133
+description: This is a configure stud welding mission
+last_saved: 1440611039.1126635
 name: configured
-state: 3
+state: 2
 tasks:
   task_1:
     direction: 1
     nav_goal: {x: 236.78, y: 364.74, yaw: 1.24}
-    state: 4
+    state: 2
     stud_pattern: {distance: 300.0, distribution: 2-1-2, press: 160.0, proximity: 150.0}
     stud_type: M3x70
-    studs:
-      stud001: {state: 0, time_stamp: 1440600699.9327023, x: 0.359607070684433, y: 0.4743896424770355}
-      stud002: {state: 0, time_stamp: 1440600699.9327023, x: 0.17953024804592133,
-        y: 0.4743896424770355}
-      stud003: {state: 0, time_stamp: 1440600699.9327023, x: 0.17953024804592133,
-        y: 0.9006242752075195}
-      stud004: {state: 0, time_stamp: 1440600699.9327023, x: 0.33648061752319336,
-        y: 0.6865984201431274}
-      stud005: {state: 0, time_stamp: 1440600699.9327023, x: 0.359607070684433, y: 0.9006242752075195}
     voltage: 200.0
-  task_3:
+  task_2:
     direction: 1
-    nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
-    state: 3
-    stud_pattern: {distance: 150.0, distribution: 2-1-2, press: 160.0, proximity: 100.0}
+    nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
+    state: 2
+    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 160.0, proximity: 125.0}
     stud_type: M3x70
-    studs:
-      stud001: {state: 0, time_stamp: 1440601183.42412, x: 0.35851195454597473, y: 0.9000865817070007}
-      stud002: {state: 0, time_stamp: 1440601183.42412, x: 0.1792403757572174, y: 0.9000865817070007}
-      stud003: {state: -1990871176, time_stamp: 1440601183.42412, x: 0.43523117899894714,
-        y: 0.8233196139335632}
-      stud004: {state: 160, time_stamp: 1440601183.42412, x: 0.2654118835926056, y: 0.8331508040428162}
-      stud005: {state: 160, time_stamp: 1440601183.42412, x: 0.43708282709121704,
-        y: 0.9815526008605957}
-      stud006: {state: 160, time_stamp: 1440601183.42412, x: 0.2714235782623291, y: 0.9692915081977844}
-      stud007: {state: 0, time_stamp: 1440601183.42412, x: 0.19966232776641846, y: 0.742347776889801}
-      stud008: {state: 160, time_stamp: 1440601183.42412, x: 0.506843626499176, y: 0.9002308249473572}
-      stud009: {state: 0, time_stamp: 1440601183.42412, x: 0.26887616515159607, y: 0.6869692206382751}
-      stud010: {state: 0, time_stamp: 1440601183.42412, x: 0.33742883801460266, y: 0.7549399733543396}
-      stud011: {state: 160, time_stamp: 1440601183.42412, x: 0.48935824632644653,
-        y: 0.7479028701782227}
-    voltage: 200.0
-  task_4:
-    direction: 1
-    nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
-    state: 4
-    stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 160.0, proximity: 100.0}
-    stud_type: M3x70
-    studs:
-      stud001: {state: 0, time_stamp: 1440601256.6729147, x: 0.3582864999771118, y: 0.4738706946372986}
-      stud002: {state: 0, time_stamp: 1440601256.6729147, x: 0.3582864999771118, y: 0.900105357170105}
-      stud003: {state: 0, time_stamp: 1440601256.6729147, x: 0.24600493907928467,
-        y: 0.9121028780937195}
-      stud004: {state: 0, time_stamp: 1440601256.6729147, x: 0.26865071058273315,
-        y: 0.6869879961013794}
-      stud005: {state: 0, time_stamp: 1440601256.6729147, x: 0.1790149062871933, y: 0.4738706946372986}
     voltage: 200.0

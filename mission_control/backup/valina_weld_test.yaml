@@ -1,0 +1,28 @@
+CAD: room1.cad
+last_saved: 1440524393.6628609
+name: valina_test_2
+state: 4
+tasks:
+  test_panel2:
+    direction: 1
+    nav_goal: {x: 5.415, y: 4.143, yaw: 3.14}
+    state: 4
+    stud_pattern: {distance: 250.0, distribution: some_dist, press: 160.0, proximity: 100.0}
+    stud_type: type49
+    studs:
+      stud_1: {state: 0, time_stamp: 1440524124.7673469, x: 0.417247, y: 0.819263}
+      stud_2: {state: 0, time_stamp: 1440524165.5183449, x: 0.144265, y: 0.819263}
+      stud_3: {state: 0, time_stamp: 1440524201.4472044, x: 0.280756, y: 0.69988}
+      stud_4: {state: 0, time_stamp: 1440524240.428119, x: 0.417247, y: 0.480498}
+      stud_5: {state: 0, time_stamp: 1440524279.719867, x: 0.144265, y: 0.480498}
+    voltage: 200
+  test_task:
+    direction: 1
+    nav_goal: {x: 4.75, y: 4.143, yaw: 3.14}
+    state: 4
+    stud_pattern: {distance: 250.0, distribution: some_dist, press: 160.0, proximity: 100.0}
+    stud_type: type49
+    studs:
+      stud_1: {state: 0, time_stamp: 1440524348.218152, x: 0.280756, y: 0.69988}
+      stud_2: {state: 0, time_stamp: 1440524389.2278109, x: 0.417247, y: 0.480498}
+    voltage: 200

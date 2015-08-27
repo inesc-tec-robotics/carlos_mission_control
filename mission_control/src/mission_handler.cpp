@@ -966,7 +966,7 @@ bool MissionHandler::updateTaskState(string task_name)
         return false;
     }
 
-    //the task state is both given by the task params AND the actual studs. Without the studs, the task state can maximum be "configured"æ
+    //the task state is both given by the task params AND the actual studs. Without the studs, the task state can maximum be "configured"
     task_state = mission::CONFIGURED;
 
     string key = "mission/tasks/" + task_name;

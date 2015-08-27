@@ -195,6 +195,39 @@ void ActionInterface::cancelExecGoals()
     cancelArmGoal();
 }
 
+void ActionInterface::removeArmGoal()
+{
+    weld_client_->stopTrackingGoal();
+}
+
+void ActionInterface::removePlatformGoal()
+{
+    move_client_->stopTrackingGoal();
+}
+
+void ActionInterface::removeTeachGoal()
+{
+    teach_client_->stopTrackingGoal();
+}
+
+void ActionInterface::removeGenPosGoal()
+{
+    gen_pos_client_->stopTrackingGoal();
+}
+
+void ActionInterface::removeInstrGoals()
+{
+    removeGenPosGoal();
+    removeTeachGoal();
+    removePlatformGoal();
+}
+
+void ActionInterface::removeExecGoals()
+{
+    removeArmGoal();
+    removePlatformGoal();
+}
+
 void ActionInterface::platformFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::movePlatformResultConstPtr &result)
 {
     switch(state.state_)

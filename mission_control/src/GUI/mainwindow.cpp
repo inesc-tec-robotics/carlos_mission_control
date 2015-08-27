@@ -1111,6 +1111,19 @@ void MainWindow::execProgressUpdate(const mission_control::Progress::ConstPtr &m
         }
     }
 
+    //kill:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == EXEC_KILL)
+        {
+            if(msg->enabled_functions[i].enabled)
+                ui->execKillButton->show();
+            else
+                ui->execKillButton->hide();
+            break;
+        }
+    }
+
     //retry:
     for(int i=0;i<(int)msg->enabled_functions.size();i++)
     {
@@ -1187,6 +1200,19 @@ void MainWindow::instrProgressUpdate(const mission_control::Progress::ConstPtr &
         if(msg->enabled_functions[i].name == INSTR_ABORT)
         {
             ui->instrStopButton->setEnabled(msg->enabled_functions[i].enabled);
+            break;
+        }
+    }
+
+    //kill:
+    for(int i=0;i<(int)msg->enabled_functions.size();i++)
+    {
+        if(msg->enabled_functions[i].name == INSTR_KILL)
+        {
+            if(msg->enabled_functions[i].enabled)
+                ui->instrKillButton->show();
+            else
+                ui->instrKillButton->hide();
             break;
         }
     }
@@ -1337,4 +1363,26 @@ void MainWindow::on_gen_tasks_button_clicked()
     //update mission info and task list:
     updateInfo();
 
+}
+
+void MainWindow::on_execKillButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_EXEC_KILL);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
+}
+
+void MainWindow::on_instrKillButton_clicked()
+{
+    mission_control::Trigger srv;
+
+    ros::ServiceClient client = n.serviceClient<mission_control::Trigger>(UIAPI_INSTR_KILL);
+    if(!client.call(srv))
+    {
+        ROS_ERROR("Failed to call service");
+    }
 }

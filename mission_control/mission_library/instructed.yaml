@@ -1,15 +1,15 @@
 CAD: room1.cad
-description: This is a super duper stud welding mission
+description: This is an instructed mission
 last_saved: 1440595869.242512
 name: instructed
-state: 3
+state: 4
 tasks:
   task_1:
-    direction: 0
+    direction: 1
     nav_goal: {x: 236.78, y: 364.74, yaw: 1.24}
     state: 4
     stud_pattern: {distance: 300.0, distribution: some_dist, press: 50.0, proximity: 150.0}
-    stud_type: type57
+    stud_type: M3x70
     studs:
       stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
@@ -17,11 +17,11 @@ tasks:
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     voltage: 100.0
   task_2:
-    direction: 0
+    direction: 1
     nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
     state: 4
     stud_pattern: {distance: 400.0, distribution: some_dist, press: 50.0, proximity: 125.0}
-    stud_type: type89
+    stud_type: M3x70
     studs:
       stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
@@ -29,18 +29,23 @@ tasks:
       stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     voltage: 100.0
   task_3:
-    direction: 0
+    direction: 1
     nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
-    state: 2
+    state: 4
     stud_pattern: {distance: 150.0, distribution: 2-1-2, press: 0.0, proximity: 80.0}
     stud_type: M3x70
+    stduds:
+      stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
+      stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
+      stud_3: {state: 0, time_stamp: 1429631245.123456, x: 101.78, y: 256.78}
+      stud_4: {state: 0, time_stamp: 1429631365.123456, x: 245.78, y: 168.78}
     voltage: 107.0
   task_4:
-    direction: 0
+    direction: 1
     nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
     state: 4
     stud_pattern: {distance: 250.0, distribution: some_dist, press: 50.0, proximity: 100.0}
-    stud_type: type49
+    stud_type: M3x70
     studs:
       stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}

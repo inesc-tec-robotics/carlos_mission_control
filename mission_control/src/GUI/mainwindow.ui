@@ -48,7 +48,7 @@
      <enum>QTabWidget::Rounded</enum>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="infoTab">
      <attribute name="title">
@@ -631,6 +631,25 @@
        </item>
       </layout>
      </widget>
+     <widget class="QPushButton" name="execKillButton">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>320</y>
+        <width>129</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Kill</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="instrTab">
      <attribute name="title">
@@ -791,6 +810,25 @@
        </item>
       </layout>
      </widget>
+     <widget class="QPushButton" name="instrKillButton">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>320</y>
+        <width>129</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Kill</string>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget_6">
@@ -798,8 +836,8 @@
      <rect>
       <x>50</x>
       <y>10</y>
-      <width>561</width>
-      <height>189</height>
+      <width>571</width>
+      <height>191</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_6">

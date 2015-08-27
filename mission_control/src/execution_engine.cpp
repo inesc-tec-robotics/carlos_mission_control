@@ -46,6 +46,7 @@ struct abort_e {};
 struct retry_e{};
 struct skip_stud_e{};
 struct skip_task_e{};
+struct kill_e{};
 
 //system events
 struct nav_done_e {};
@@ -73,6 +74,7 @@ struct abortPossible_f{};
 struct retryPossible_f{};
 struct skipTaskPossible_f{};
 struct skipStudPossible_f{};
+struct killPossible_f{};
 
 //////////////
 ///STATES
@@ -235,8 +237,7 @@ struct wait_cancel_s : public msm::front::state<>
     void on_entry(Event const& event ,FSM&)
     {
         ExecutionEngine::getInstance()->current_state_ = ExecState::WAIT_CANCEL;
-        vector<string> temp;
-        ExecutionEngine::getInstance()->setEnabledFunctions(temp);
+        ExecutionEngine::getInstance()->setEnabledFunctions(boost::assign::list_of (EXEC_KILL) );
         ExecutionEngine::getInstance()->sendProgressUpdate("Waiting for action servers to cancel goals.");
 
         ROS_DEBUG("Execution engine entering wait for cancel state");
@@ -336,6 +337,14 @@ struct cancel_goals_a
     void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
     {
         ExecutionEngine::getInstance()->aci_->cancelExecGoals();
+    }
+};
+struct kill_goals_a
+{
+    template <class FSM,class EVT,class SourceState,class TargetState>
+    void operator()(EVT const& ,FSM& fsm,SourceState& ,TargetState& )
+    {
+        ExecutionEngine::getInstance()->aci_->removeExecGoals();
     }
 };
 
@@ -452,7 +461,8 @@ struct ExecutionStateMachine_ : public msm::front::state_machine_def<ExecutionSt
             Row < wait_cancel_s,        mani_done_e,        stopped_s,      none,                       none                >,
             Row < wait_cancel_s,        nav_fail_e,         stopped_s,      none,                       none                >,
             Row < wait_cancel_s,        weld_fail_e,        stopped_s,      none,                       none                >,
-            Row < wait_cancel_s,        hw_fail_e,          stopped_s,      none,                       none                >
+            Row < wait_cancel_s,        hw_fail_e,          stopped_s,      none,                       none                >,
+            Row < wait_cancel_s,        kill_e,             stopped_s,      kill_goals_a,               none                >
             > {};
 
     // Replaces the default no-transition response.
@@ -528,6 +538,11 @@ bool ExecutionEngine::skipTask()
 bool ExecutionEngine::retry()
 {
     return (esm_->process_event(retry_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
+}
+
+bool ExecutionEngine::kill()
+{
+    return (esm_->process_event(kill_e()) == boost::msm::back::HANDLED_TRUE ? true : false);
 }
 
 void ExecutionEngine::maniDone()
@@ -658,7 +673,8 @@ void ExecutionEngine::setEnabledFunctions(vector<string> functions)
             (EXEC_PAUSE, false)
             (EXEC_RETRY, false)
             (EXEC_SKIP_STUD, false)
-            (EXEC_SKIP_TASK, false);
+            (EXEC_SKIP_TASK, false)
+            (EXEC_KILL, false);
     for(int i=0;i<(int)functions.size();i++)
     {
         enabled_functions[functions[i]] = true;

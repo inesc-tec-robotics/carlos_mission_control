@@ -72,6 +72,7 @@ private:
 
     bool execStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool execAbortCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool execKillCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool execPauseCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool execSkipStudCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool execSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
@@ -79,6 +80,7 @@ private:
 
     bool instrStartCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool instrAbortCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
+    bool instrKillCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool instrPauseCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool instrSkipStudCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
     bool instrSkipTaskCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response);
@@ -140,6 +142,7 @@ private:
     ros::ServiceServer exec_skip_stud_srv_;
     ros::ServiceServer exec_skip_task_srv_;
     ros::ServiceServer exec_retry_srv_;
+    ros::ServiceServer exec_kill_srv_;
 
     //instruction control services
     ros::ServiceServer instr_start_srv_;
@@ -147,6 +150,7 @@ private:
     ros::ServiceServer instr_pause_srv_;
     ros::ServiceServer instr_skip_task_srv_;
     ros::ServiceServer instr_retry_srv_;
+    ros::ServiceServer instr_kill_srv_;
 
     //edit control services
     ros::ServiceServer edit_start_srv_;

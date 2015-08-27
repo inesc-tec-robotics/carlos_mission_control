@@ -1,5 +1,5 @@
 CAD: room1.cad
-description: This is a super duper stud welding mission
+description: This is a partially completed stud welding mission
 last_saved: 1436520407.612425
 name: partially_completed
 state: 5
@@ -7,10 +7,10 @@ tasks:
   task_1:
     nav_goal: {x: 236.78, y: 364.74, yaw: 1.24}
     state: 6
-    stud_pattern: {distance: 300.0, distribution: some_dist, press: 50.0, proximity: 150.0}
+    stud_pattern: {distance: 300.0, distribution: some_dist, press: 150.0, proximity: 150.0}
     stud_type: type57
     voltage: 100.0
-    direction: 0    
+    direction: 1    
     studs:
       stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
@@ -19,10 +19,10 @@ tasks:
   task_2:
     nav_goal: {x: 896.78, y: 484.74, yaw: 1.24}
     state: 6
-    stud_pattern: {distance: 400.0, distribution: some_dist, press: 50.0, proximity: 125.0}
+    stud_pattern: {distance: 400.0, distribution: some_dist, press: 150.0, proximity: 125.0}
     stud_type: type89
     voltage: 100.0
-    direction: 0    
+    direction: 1    
     studs:
       stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 1, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
@@ -31,10 +31,10 @@ tasks:
   task_3:
     nav_goal: {x: 916.78, y: 374.74, yaw: 1.24}
     state: 5
-    stud_pattern: {distance: 150.0, distribution: some_dist, press: 50.0, proximity: 250.0}
+    stud_pattern: {distance: 150.0, distribution: some_dist, press: 150.0, proximity: 250.0}
     stud_type: type31
-    voltage: 100.0
-    direction: 0    
+    voltage: 200.0
+    direction: 1    
     studs:
       stud_1: {state: 1, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 2, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}
@@ -43,10 +43,10 @@ tasks:
   task_4:
     nav_goal: {x: 24.78, y: 672.74, yaw: 1.24}
     state: 4
-    stud_pattern: {distance: 250.0, distribution: some_dist, press: 50.0, proximity: 100.0}
+    stud_pattern: {distance: 250.0, distribution: some_dist, press: 150.0, proximity: 100.0}
     stud_type: type49
-    voltage: 100.0
-    direction: 0    
+    voltage: 200.0
+    direction: 1    
     studs:
       stud_1: {state: 0, time_stamp: 1429631054.123456, x: 26.78, y: 154.78}
       stud_2: {state: 0, time_stamp: 1429631089.123456, x: 36.78, y: 25.78}

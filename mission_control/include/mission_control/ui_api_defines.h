@@ -16,6 +16,7 @@
 
 #define UIAPI_EXEC_START            "mission_control/UI/execStart"
 #define UIAPI_EXEC_ABORT            "mission_control/UI/execAbort"
+#define UIAPI_EXEC_KILL             "mission_control/UI/execKill"
 #define UIAPI_EXEC_PAUSE_RESUME     "mission_control/UI/execPauseResume"
 #define UIAPI_EXEC_RETRY            "mission_control/UI/execRetry"
 #define UIAPI_EXEC_SKIP_TASK        "mission_control/UI/execSkipTask"
@@ -23,6 +24,7 @@
 
 #define UIAPI_INSTR_START           "mission_control/UI/instrStart"
 #define UIAPI_INSTR_ABORT           "mission_control/UI/instrAbort"
+#define UIAPI_INSTR_KILL             "mission_control/UI/instrKill"
 #define UIAPI_INSTR_PAUSE_RESUME    "mission_control/UI/instrPauseResume"
 #define UIAPI_INSTR_RETRY           "mission_control/UI/instrRetry"
 #define UIAPI_INSTR_SKIP_TASK       "mission_control/UI/instrSkipTask"

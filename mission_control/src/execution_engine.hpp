@@ -131,6 +131,7 @@ public:
     bool skipStud();
     bool skipTask();
     bool retry();
+    bool kill();
 
     //convert a 3x double into PoseStamped
     geometry_msgs::PoseStamped convert2PoseStamped(double x, double y, double yaw);

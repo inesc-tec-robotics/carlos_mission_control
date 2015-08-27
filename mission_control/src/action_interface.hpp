@@ -40,6 +40,13 @@ public:
     void cancelExecGoals();
     void cancelInstrGoals();
 
+    void removeArmGoal();
+    void removePlatformGoal();
+    void removeTeachGoal();
+    void removeGenPosGoal();
+    void removeInstrGoals();
+    void removeExecGoals();
+
 private:
 
     void platformFinishedCB(const actionlib::SimpleClientGoalState &state, const mission_ctrl_msgs::movePlatformResultConstPtr &result);

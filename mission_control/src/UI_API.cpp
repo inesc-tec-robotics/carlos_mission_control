@@ -40,12 +40,14 @@ UiAPI::UiAPI()
     get_task_params_srv_ = n.advertiseService(UIAPI_GET_TASK_PARAMS, &UiAPI::getTaskParamsCB, this);
     exec_start_srv_ = n.advertiseService(UIAPI_EXEC_START, &UiAPI::execStartCB, this);
     exec_abort_srv_ = n.advertiseService(UIAPI_EXEC_ABORT, &UiAPI::execAbortCB, this);
+    exec_kill_srv_ = n.advertiseService(UIAPI_EXEC_KILL, &UiAPI::execKillCB, this);
     exec_pause_srv_ = n.advertiseService(UIAPI_EXEC_PAUSE_RESUME, &UiAPI::execPauseCB, this);
     exec_skip_stud_srv_ = n.advertiseService(UIAPI_EXEC_SKIP_STUD, &UiAPI::execSkipStudCB, this);
     exec_skip_task_srv_ = n.advertiseService(UIAPI_EXEC_SKIP_TASK, &UiAPI::execSkipTaskCB, this);
     exec_retry_srv_ = n.advertiseService(UIAPI_EXEC_RETRY, &UiAPI::execRetryCB, this);
     instr_start_srv_ = n.advertiseService(UIAPI_INSTR_START, &UiAPI::instrStartCB, this);
     instr_abort_srv_ = n.advertiseService(UIAPI_INSTR_ABORT, &UiAPI::instrAbortCB, this);
+    instr_kill_srv_ = n.advertiseService(UIAPI_INSTR_KILL, &UiAPI::instrKillCB, this);
     instr_pause_srv_ = n.advertiseService(UIAPI_INSTR_PAUSE_RESUME, &UiAPI::instrPauseCB, this);
     instr_skip_task_srv_ = n.advertiseService(UIAPI_INSTR_SKIP_TASK, &UiAPI::instrSkipTaskCB, this);
     instr_retry_srv_ = n.advertiseService(UIAPI_INSTR_RETRY, &UiAPI::instrRetryCB, this);
@@ -383,6 +385,15 @@ bool UiAPI::execAbortCB(mission_control::Trigger::Request &request, mission_cont
     return true;
 }
 
+bool UiAPI::execKillCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    ROS_DEBUG_STREAM("execKillCB");
+
+    response.success = ExecutionEngine::getInstance()->kill();
+
+    return true;
+}
+
 bool UiAPI::execPauseCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
 {
     ROS_DEBUG_STREAM("execPauseCB");
@@ -444,6 +455,15 @@ bool UiAPI::instrAbortCB(mission_control::Trigger::Request &request, mission_con
     ROS_DEBUG_STREAM("instrAbortCB");
 
     response.success = InstructionEngine::getInstance()->abort();
+
+    return true;
+}
+
+bool UiAPI::instrKillCB(mission_control::Trigger::Request &request, mission_control::Trigger::Response &response)
+{
+    ROS_DEBUG_STREAM("instrKillCB");
+
+    response.success = InstructionEngine::getInstance()->kill();
 
     return true;
 }
