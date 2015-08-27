@@ -1,18 +1,22 @@
 CAD: room1.cad
 last_saved: 1440669637.3531482
-name: valina_instr_1
+name: valina_instr_fire
 state: 2
 tasks:
   task001:
     direction: 1
     nav_goal: {x: 0.734, y: 3.517, yaw: -1.57}
+    obstacles:
+      fire_extinguisher001: {time_stamp: 1429631054.123456, x: 0.4, y: 0.5}
     state: 2
     stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 165.0, proximity: 100.0}
     stud_type: M3x70
     voltage: 200.0
   task002:
     direction: 1
-    nav_goal: {x: 0.731, y: 2.911, yaw: -1.57}
+    nav_goal: {x: 0.737, y: 1.702, yaw: -1.57}
+    obstacles:
+      fire_extinguisher001: {time_stamp: 1429631054.123456, x: 0.4, y: 0.5}
     state: 2
     stud_pattern: {distance: 100.0, distribution: 2-1-2, press: 165.0, proximity: 100.0}
     stud_type: M3x70

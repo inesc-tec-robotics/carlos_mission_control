@@ -26,6 +26,7 @@
 #include "system_engine.hpp"
 #include "UI_API.hpp"
 #include "mission_control/function_defines.h"
+#include "MathOperations.hpp"
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
@@ -622,23 +623,23 @@ geometry_msgs::PoseStamped ExecutionEngine::convert2PoseStamped(double x, double
     double Rb = 0.0;
     double Rc = 0.0;
 
-    Eigen::Matrix3d rotation_matrix;
-    rotation_matrix(0,0) = std::cos(y) * std::cos(Rb);
-    rotation_matrix(0,1) = std::cos(Ra) * std::sin(Rb) * std::sin(Rc) - std::sin(Ra) * std::cos(Rc);
-    rotation_matrix(0,2) = std::cos(Ra) * std::sin(Rb) * std::cos(Rc) + std::sin(Ra) * std::sin(Rc);
-    rotation_matrix(1,0) = std::sin(Ra) * std::cos(Rb);
-    rotation_matrix(1,1) = std::sin(Ra) * std::sin(Rb) * std::sin(Rc) + std::cos(Ra) * std::cos(Rc);
-    rotation_matrix(1,2) = std::sin(Ra) * std::sin(Rb) * std::cos(Rc) - std::cos(Ra) * std::sin(Rc);
-    rotation_matrix(2,0) = -std::sin(Rb);
-    rotation_matrix(2,1) = std::cos(Rb) * std::sin(Rc);
-    rotation_matrix(2,2) = std::cos(Rb) * std::cos(Rc);
+    MathOp::Transform rot(yaw,0,0,x,y,0);
 
-    Eigen::Quaternion<double> rot_quaternions(rotation_matrix);
+    cout << rot.print() << endl;
+    cout << rot.printVector() << endl;
 
-    nav_goal.pose.orientation.w = rot_quaternions.w();
-    nav_goal.pose.orientation.x = rot_quaternions.x();
-    nav_goal.pose.orientation.y = rot_quaternions.y();
-    nav_goal.pose.orientation.z = rot_quaternions.z();
+    cv::Vec4d quat = rot.getQuaternions();
+
+    cout << quat << endl;
+
+
+    //Eigen::Quaternion<double> rot_quaternions(rotation_matrix);
+    //rot_quaternions.Identity()
+
+    nav_goal.pose.orientation.w = quat[0];
+    nav_goal.pose.orientation.x = quat[1];
+    nav_goal.pose.orientation.y = quat[2];
+    nav_goal.pose.orientation.z = quat[3];
 
     return nav_goal;
 }

@@ -77,6 +77,8 @@ private slots:
 
     void on_instrKillButton_clicked();
 
+    void on_clearStudsButton_clicked();
+
 public slots:
     void execProgressUpdate(const mission_control::Progress::ConstPtr &msg);
     void instrProgressUpdate(const mission_control::Progress::ConstPtr &msg);

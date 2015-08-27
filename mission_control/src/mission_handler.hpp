@@ -252,6 +252,9 @@ public:
     //change the state of a stud.
     bool setStudState(std::string task_name, std::string stud_name, stud::states state);
 
+    //remove all studs in a task (resets it to "configured")
+    bool removeStuds(std::string task_name);
+
     /* Request "platform-system" to auto-generate initial goals and thus tasks.
      * Not entirely sure if this function fits here in mission control, but couldn't find a
      * better suited place at the moment. Also, since the service call to the platform will

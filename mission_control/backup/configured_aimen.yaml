@@ -1,0 +1,34 @@
+CAD: room1.cad
+description: This is a super duper stud welding mission
+last_saved: 1438173900.092791
+name: configured
+state: 2
+tasks:
+  task_1:
+    nav_goal: {x: 2.1199999492615462, y: 1.1799999568611383, yaw: 0.0}
+    state: 2
+    stud_pattern: {distance: 300.0, distribution: some_dist, press: 50.0, proximity: 150.0}
+    stud_type: type57
+    voltage: 100.0
+    direction: 0
+  task_2:
+    nav_goal: {x: 2.719999935850501, y: 1.1799999568611383, yaw: 0.0}
+    state: 2
+    stud_pattern: {distance: 400.0, distribution: some_dist, press: 50.0, proximity: 125.0}
+    stud_type: type89
+    voltage: 100.0
+    direction: 0
+  task_3:
+    nav_goal: {x: 3.319999922439456, y: 1.1799999568611383, yaw: 0.0}
+    state: 2
+    stud_pattern: {distance: 150.0, distribution: '', press: 0.0, proximity: 0.0}
+    stud_type: type89
+    voltage: 100.0
+    direction: 0
+  task_4:
+    nav_goal: {x: 3.6299999188631773, y: 1.0099999774247408, yaw: 1.5673078195498946}
+    state: 2
+    stud_pattern: {distance: 250.0, distribution: some_dist, press: 50.0, proximity: 100.0}
+    stud_type: type49
+    voltage: 100.0
+    direction: 0

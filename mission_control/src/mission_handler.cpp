@@ -740,6 +740,31 @@ bool MissionHandler::setStudState(string task_name, string stud_name, stud::stat
     return true;
 }
 
+bool MissionHandler::removeStuds(string task_name)
+{
+    //check that a mission is loaded:
+    if(!isLoaded())
+    {
+        ROS_ERROR_STREAM("Cannot remove studs. No mission loaded.");
+        return false;
+    }
+
+    //check that task exists:
+    vector<string> tasks = getTaskList();
+
+    if(!ros::param::has(("mission/tasks/" + task_name)))
+    {
+        ROS_ERROR_STREAM("Failed to remove studs. Task: " << task_name << " doesn't exist in mission: " << getLoadedName());
+        return false;
+    }
+
+    //remove the studs:
+    ros::param::del(("mission/tasks/" + task_name + "/studs"));
+
+    //update the task state (and mission state):
+    return updateTaskState(task_name);
+}
+
 bool MissionHandler::setTaskParamsDefault(string task_name)
 {
     ROS_DEBUG_STREAM("MissionHandler::setTaskParamsDefault - task_name: " << task_name);

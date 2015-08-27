@@ -852,6 +852,7 @@ void MainWindow::closeTaskEdit()
 
     //update the task data
     updateTaskData(ui->task_name_edit->text().toStdString());
+    updateMissionData();
 }
 
 void MainWindow::on_editMissionButton_clicked()
@@ -1361,6 +1362,7 @@ void MainWindow::on_gen_tasks_button_clicked()
     exitEditMode();
 
     //update mission info and task list:
+    usleep(2000000);
     updateInfo();
 
 }
@@ -1385,4 +1387,9 @@ void MainWindow::on_instrKillButton_clicked()
     {
         ROS_ERROR("Failed to call service");
     }
+}
+
+void MainWindow::on_clearStudsButton_clicked()
+{
+    //go to edit mode
 }

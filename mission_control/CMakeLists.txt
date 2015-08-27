@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   mission_ctrl_msgs
   XMLOperations
+  MathOp
 )
 
 ## System dependencies are found with CMake's conventions
@@ -119,6 +120,7 @@ catkin_package(
   message_runtime
   mission_ctrl_msgs
   XMLOperations
+  MathOp
   DEPENDS Boost
   )
 
