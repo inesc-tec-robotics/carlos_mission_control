@@ -7,18 +7,23 @@
 //
 
 #include "ros/ros.h"
+#include "ros/package.h"
 #include "ros/node_handle.h"
 #include "actionlib/server/simple_action_server.h"
 #include "mission_ctrl_msgs/movePlatformAction.h"
 #include "mission_ctrl_msgs/mission_ctrl_defines.h"
 #include "mission_ctrl_msgs/hardware_state.h"
 #include "text_color_defines.h"
+#include "std_srvs/Empty.h"
 
 
 using namespace std;
 
 //declare action server:
 actionlib::SimpleActionServer<mission_ctrl_msgs::movePlatformAction>* move_server_;
+
+//service server to generate initial goals:
+ros::ServiceServer initial_goals_srv_;
 
 //publisher
 ros::Publisher state_publisher_;
@@ -85,6 +90,16 @@ void moveActionCB(const mission_ctrl_msgs::movePlatformGoalConstPtr& goal)
     }
 }
 
+bool genGoalsCB(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response)
+{
+    string path = ros::package::getPath("carlos_emulators");
+
+    string command = "rosparam load " + path + "/goals.yaml /mission";
+    system(command.c_str());
+
+    return true;
+}
+
 void statePubTimeout(const ros::TimerEvent& event)
 {
     mission_ctrl_msgs::hardware_state state;
@@ -105,6 +120,8 @@ int main(int argc, char * argv[])
 
     move_server_ = new actionlib::SimpleActionServer<mission_ctrl_msgs::movePlatformAction>(n, CARLOS_MOVE_ACTION, boost::bind(&moveActionCB, _1), false);
     move_server_->start();
+
+    initial_goals_srv_ = n.advertiseService(CARLOS_INIT_GOAL_GEN_SRV, &genGoalsCB);
 
     cout << "action server started. Ready to cruise 'round some ships" << endl;
 

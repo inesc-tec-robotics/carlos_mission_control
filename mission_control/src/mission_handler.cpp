@@ -849,6 +849,7 @@ bool MissionHandler::autoGenTasks()
     vector<string> tasks = getTaskList();
     for(int i=0;i<(int)tasks.size();i++)
     {
+        cout << "Setting params default for task: " << tasks[i] << endl;
         setTaskParamsDefault(tasks[i]);
     }
 

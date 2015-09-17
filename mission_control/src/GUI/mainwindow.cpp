@@ -123,6 +123,9 @@ void MainWindow::initUI()
     initInfoTab();
     initExecuteTab();
     initInstructTab();
+
+    //hack
+    ui->clearStudsButton->hide();
 }
 
 void MainWindow::initExecuteTab()
