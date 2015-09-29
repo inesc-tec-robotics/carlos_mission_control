@@ -15,6 +15,7 @@
 /* Services */
 #define CARLOS_INIT_GOAL_GEN_SRV  	"/initial_goals/set_goals_params"
 #define CARLOS_ARM_HOME_SRV 		"/carlos/arm_home"
+#define CARLOS_ARM_FEEDER_EXIT_SRV	"/carlos/arm_feeder_exit"
 
 /* Actions */
 #define CARLOS_WELD_ACTION         "/carlos/execute_weld"
